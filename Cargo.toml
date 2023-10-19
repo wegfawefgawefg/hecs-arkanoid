@@ -1,5 +1,5 @@
 [package]
-name = "hecs-breakout"
+name = "hecs-arkanoid"
 version = "0.1.0"
 edition = "2021"
 

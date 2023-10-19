@@ -1,10 +1,10 @@
 use glam::Vec2;
 use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode, Vector2};
 
-pub type RenderCommandBuffer = Vec<DrawCommand>;
+pub type RenderCommandBuffer = Vec<RenderCommand>;
 
 #[derive(Clone)]
-pub enum DrawCommand {
+pub enum RenderCommand {
     ColoredSquare {
         pos: Vec2,
         color: Color,
@@ -50,24 +50,24 @@ pub fn execute_render_command_buffer(
 ) {
     for command in render_command_buffer.iter() {
         match command {
-            DrawCommand::ColoredSquare { pos, color } => {
+            RenderCommand::ColoredSquare { pos, color } => {
                 d.draw_rectangle(pos.x as i32, pos.y as i32, SIZE, SIZE, *color);
             }
-            DrawCommand::Block { pos, dims, color } => d.draw_rectangle_lines(
+            RenderCommand::Block { pos, dims, color } => d.draw_rectangle_lines(
                 pos.x as i32,
                 pos.y as i32,
                 dims.x as i32,
                 dims.y as i32,
                 color,
             ),
-            DrawCommand::Paddle { pos, dims, color } => d.draw_rectangle_lines(
+            RenderCommand::Paddle { pos, dims, color } => d.draw_rectangle_lines(
                 pos.x as i32,
                 pos.y as i32,
                 dims.x as i32,
                 dims.y as i32,
                 color,
             ),
-            DrawCommand::Text {
+            RenderCommand::Text {
                 pos,
                 text,
                 size,
@@ -75,14 +75,14 @@ pub fn execute_render_command_buffer(
             } => {
                 d.draw_text(text, pos.x as i32, pos.y as i32, *size, *color);
             }
-            DrawCommand::Line { start, end, color } => {
+            RenderCommand::Line { start, end, color } => {
                 d.draw_line_v(
                     Vector2::new(start.x, start.y),
                     Vector2::new(end.x, end.y),
                     *color,
                 );
             }
-            DrawCommand::Circle { pos, radius, color } => {
+            RenderCommand::Circle { pos, radius, color } => {
                 d.draw_circle(pos.x as i32, pos.y as i32, *radius, *color);
             }
         }

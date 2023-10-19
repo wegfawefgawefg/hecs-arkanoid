@@ -9,11 +9,12 @@ use window_helpers::{center_window, scale_and_blit_render_texture_to_window};
 mod audio;
 mod audio_playing;
 mod components;
-mod draw;
 mod game_mode_transitions;
 mod input_processing;
+mod level_data;
 mod message_stream;
-mod rendering;
+mod render;
+mod render_commands;
 mod state;
 mod step;
 mod systems;
@@ -30,7 +31,7 @@ fn main() {
     }
 
     ////////////////    INIT GRAPHICS    ////////////////
-    let window_dims = UVec2::new(1280, 720);
+    let window_dims = DIMS * 4;
     let fullscreen = false;
     rl.set_window_size(window_dims.x as i32, window_dims.y as i32);
     if fullscreen {
@@ -72,7 +73,7 @@ fn main() {
             state.render_command_buffer.clear();
             state.audio_command_buffer.clear();
 
-            step::step(&mut rl, &mut state);
+            step::step(&mut rl, &mut ecs, &mut state);
         }
 
         ////////////////    AUDIO STEP  ////////////////
@@ -89,7 +90,7 @@ fn main() {
                 &mut draw_handle.begin_texture_mode(&rlt, &mut render_texture);
             low_res_draw_handle.clear_background(Color::BLACK);
 
-            draw::draw(&state, low_res_draw_handle);
+            render::draw(&state, low_res_draw_handle);
         }
         scale_and_blit_render_texture_to_window(
             &mut draw_handle,

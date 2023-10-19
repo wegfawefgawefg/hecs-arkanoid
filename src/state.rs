@@ -5,7 +5,7 @@ use crate::{
     audio_playing::AudioCommandBuffer,
     input_processing::{PlayingInputs, TitleInputs},
     message_stream::ExpiringMessages,
-    rendering::RenderCommandBuffer,
+    render_commands::RenderCommandBuffer,
 };
 
 pub const FRAMES_PER_SECOND: u32 = 60;
@@ -17,6 +17,7 @@ pub enum GameMode {
     GameOver,
 }
 
+pub const LEVEL_CHANGE_DELAY_DEFAULT: u32 = 10;
 pub struct State {
     pub running: bool,
     pub time_since_last_update: f32,
@@ -33,6 +34,9 @@ pub struct State {
     pub title_inputs: TitleInputs,
     pub playing_inputs: PlayingInputs,
     pub mouse_screen_pos: Vec2,
+
+    pub level: u32,
+    pub level_change_delay: u32,
 }
 
 impl State {
@@ -68,6 +72,9 @@ impl State {
             title_inputs,
             playing_inputs,
             mouse_screen_pos,
+
+            level: 0,
+            level_change_delay: 0,
         }
     }
 }

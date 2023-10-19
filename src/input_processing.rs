@@ -50,20 +50,27 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
         left: false,
         right: false,
         confirm: false,
+        next_level: false,
+        previous_level: false,
     };
-    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_LEFT)
-        || rl.is_key_down(raylib::consts::KeyboardKey::KEY_A)
-    {
+    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_A) {
         inputs.left = true;
     }
-    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_RIGHT)
-        || rl.is_key_down(raylib::consts::KeyboardKey::KEY_D)
-    {
+    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_D) {
         inputs.right = true;
     }
     if rl.is_key_down(raylib::consts::KeyboardKey::KEY_SPACE) {
         inputs.confirm = true;
     }
+
+    // advance level up and down if right or left arrow key is pressed
+    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_RIGHT) && state.level < 34 {
+        inputs.next_level = true;
+    }
+    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_LEFT) && state.level > 0 {
+        inputs.previous_level = true;
+    }
+
     state.playing_inputs = inputs;
 }
 
@@ -91,6 +98,9 @@ pub struct PlayingInputs {
     pub left: bool,
     pub right: bool,
     pub confirm: bool,
+
+    pub next_level: bool,
+    pub previous_level: bool,
 }
 impl PlayingInputs {
     pub fn new() -> PlayingInputs {
@@ -98,6 +108,9 @@ impl PlayingInputs {
             left: false,
             right: false,
             confirm: false,
+
+            next_level: false,
+            previous_level: false,
         }
     }
 }

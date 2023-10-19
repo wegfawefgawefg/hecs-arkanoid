@@ -3,7 +3,7 @@ use raylib::prelude::Color;
 
 use crate::{
     components::{CTransform, Player},
-    rendering::{DrawCommand, RenderCommandBuffer},
+    render_commands::{RenderCommand, RenderCommandBuffer},
     DIMS,
 };
 

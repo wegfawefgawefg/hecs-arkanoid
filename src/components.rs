@@ -1,5 +1,6 @@
 use glam::Vec2;
 use hecs::Entity;
+use raylib::prelude::Color;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CTransform {
@@ -13,11 +14,21 @@ pub struct Ball;
 
 pub struct InputControlled;
 
+pub struct Block {
+    pub color: Color,
+}
+
 pub struct Health {
     pub hp: u32,
 }
 
-pub struct VelocityUncapped;
+pub struct Paddle {
+    pub size: u32,
+}
+
+pub struct Shape {
+    pub dims: Vec2,
+}
 
 pub struct Physics {
     pub vel: Vec2,

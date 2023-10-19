@@ -1,12 +1,72 @@
-// use glam::Vec2;
-// use rand::{rngs::StdRng, Rng};
-// use raylib::prelude::Color;
+use glam::Vec2;
+use hecs::World;
+use rand::{rngs::StdRng, Rng};
+use raylib::prelude::Color;
 
-// use crate::{
-//     message_stream::ExpiringMessages,
-//     rendering::{DrawCommand, RenderCommandBuffer},
-//     DIMS,
-// };
+use crate::{
+    components::{Block, CTransform, Paddle, Player, Shape},
+    render_commands::RenderCommand,
+    state::State,
+    DIMS,
+};
+
+pub fn render(ecs: &World, state: &mut State) {
+    // render every player as a paddle
+    for (_, (_, ctransform, shape)) in ecs.query::<(&Paddle, &CTransform, &Shape)>().iter() {
+        state.render_command_buffer.push(RenderCommand::Paddle {
+            pos: ctransform.pos,
+            dims: shape.dims,
+            color: Color::RAYWHITE,
+        })
+    }
+
+    // render every block
+    for (_, (block, ctransform, shape)) in ecs.query::<(&Block, &CTransform, &Shape)>().iter() {
+        state.render_command_buffer.push(RenderCommand::Block {
+            pos: ctransform.pos,
+            dims: shape.dims,
+            color: block.color,
+        })
+    }
+
+    // red line at bottom of screen
+    state.render_command_buffer.push(RenderCommand::Line {
+        start: Vec2::new(0.0, DIMS.y as f32 - 1.0),
+        end: DIMS.as_vec2() - Vec2::new(0.0, 1.0),
+        color: Color::RED,
+    });
+
+    // white line at the top of the screen
+    state.render_command_buffer.push(RenderCommand::Line {
+        start: Vec2::ZERO,
+        end: Vec2::new(DIMS.x as f32, 0.0),
+        color: Color::WHITE,
+    });
+
+    // white line at the left
+    state.render_command_buffer.push(RenderCommand::Line {
+        start: Vec2::new(1.0, 0.0),
+        end: Vec2::new(1.0, DIMS.y as f32),
+        color: Color::WHITE,
+    });
+
+    // white line at the right
+    state.render_command_buffer.push(RenderCommand::Line {
+        start: Vec2::new(DIMS.x as f32, 0.0),
+        end: DIMS.as_vec2(),
+        color: Color::WHITE,
+    });
+
+    // render the level in the top right
+    let mut cursor = Vec2::new(DIMS.x as f32 - 50.0, DIMS.y as f32 - 20.0);
+    let size = 1;
+    state.render_command_buffer.push(RenderCommand::Text {
+        pos: cursor,
+        text: format!("Level: {}", state.level),
+        size,
+        color: Color::WHITE,
+    });
+}
 
 // pub fn entity_render(
 //     ecs: &SubWorld,

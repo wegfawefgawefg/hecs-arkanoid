@@ -1,27 +1,42 @@
-use hecs::World;
+use std::char::MAX;
 
-use crate::{state::State, DIMS};
+use hecs::{Without, World};
+
+use crate::components::{CTransform, Paddle, Physics};
+use crate::state::State;
 
 const MAX_VEL: f32 = 2.0;
+pub fn physics(ecs: &World, state: &mut State) {
+    for (_, (ctransform, physics)) in ecs.query::<(&mut CTransform, &mut Physics)>().iter() {
+        if physics.vel.length() > MAX_VEL {
+            physics.vel = physics.vel.normalize() * MAX_VEL;
+        }
 
-pub fn physics(ecs: &mut World, state: &mut State) {
-    // let query = <&mut Physics>::query();
-    // for physics in query.filter(!component::<VelocityUncapped>()).iter_mut(ecs) {
-    //     if physics.vel.length() > MAX_VEL {
-    //         physics.vel = physics.vel.normalize() * MAX_VEL;
-    //     }
-    // }
-    // let mut step_query = <(&mut CTransform, &mut Physics)>::query();
-    // for (ctransform, physics) in step_query.iter_mut(ecs) {
-    //     if physics.vel.length() > MAX_VEL {
-    //         physics.vel = physics.vel.normalize() * MAX_VEL;
-    //     }
-    //     ctransform.pos += physics.vel;
+        ctransform.pos += physics.vel;
 
-    //     let rot_matrix = glam::Mat2::from_angle(physics.rot_vel.to_radians() * 0.1);
-    //     ctransform.rot = (rot_matrix * ctransform.rot).normalize();
-    // }
+        let rot_matrix = glam::Mat2::from_angle(physics.rot_vel.to_radians() * 0.1);
+        ctransform.rot = (rot_matrix * ctransform.rot).normalize();
+    }
 }
+
+// pub fn physics(ecs: &mut World, state: &mut State) {
+// let query = <&mut Physics>::query();
+// for physics in query.filter(!component::<VelocityUncapped>()).iter_mut(ecs) {
+//     if physics.vel.length() > MAX_VEL {
+//         physics.vel = physics.vel.normalize() * MAX_VEL;
+//     }
+// }
+// let mut step_query = <(&mut CTransform, &mut Physics)>::query();
+// for (ctransform, physics) in step_query.iter_mut(ecs) {
+//     if physics.vel.length() > MAX_VEL {
+//         physics.vel = physics.vel.normalize() * MAX_VEL;
+//     }
+//     ctransform.pos += physics.vel;
+
+//     let rot_matrix = glam::Mat2::from_angle(physics.rot_vel.to_radians() * 0.1);
+//     ctransform.rot = (rot_matrix * ctransform.rot).normalize();
+// }
+// }
 
 // #[system]
 // #[write_component(CTransform)]
