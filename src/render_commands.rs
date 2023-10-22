@@ -14,6 +14,10 @@ pub enum RenderCommand {
         dims: Vec2,
         color: Color,
     },
+    Ball {
+        pos: Vec2,
+        dims: Vec2,
+    },
     Paddle {
         pos: Vec2,
         dims: Vec2,
@@ -50,6 +54,13 @@ pub fn execute_render_command_buffer(
 ) {
     for command in render_command_buffer.iter() {
         match command {
+            RenderCommand::Ball { pos, dims } => d.draw_rectangle_lines(
+                pos.x as i32,
+                pos.y as i32,
+                dims.x as i32,
+                dims.y as i32,
+                Color::RAYWHITE,
+            ),
             RenderCommand::ColoredSquare { pos, color } => {
                 d.draw_rectangle(pos.x as i32, pos.y as i32, SIZE, SIZE, *color);
             }

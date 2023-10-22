@@ -1,4 +1,3 @@
-pub mod collision;
 pub mod enemy_behaviour;
 pub mod input_processing;
 pub mod physics;

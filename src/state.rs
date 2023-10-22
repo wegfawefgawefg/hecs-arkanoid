@@ -3,8 +3,10 @@ use rand::{rngs::StdRng, SeedableRng};
 
 use crate::{
     audio_playing::AudioCommandBuffer,
+    components::Physics,
     input_processing::{PlayingInputs, TitleInputs},
     message_stream::ExpiringMessages,
+    physics_engine::PhysicsEngine,
     render_commands::RenderCommandBuffer,
 };
 
@@ -35,8 +37,11 @@ pub struct State {
     pub playing_inputs: PlayingInputs,
     pub mouse_screen_pos: Vec2,
 
+    // pub collision_events: Vec<Collision>,
     pub level: u32,
     pub level_change_delay: u32,
+
+    pub physics: PhysicsEngine,
 }
 
 impl State {
@@ -54,6 +59,8 @@ impl State {
         let title_inputs = TitleInputs::new();
         let playing_inputs = PlayingInputs::new();
         let mouse_screen_pos = Vec2::ZERO;
+
+        let physics = PhysicsEngine::new();
 
         Self {
             running: true,
@@ -73,8 +80,11 @@ impl State {
             playing_inputs,
             mouse_screen_pos,
 
+            // collision_events: Vec::new(),
             level: 0,
             level_change_delay: 0,
+
+            physics,
         }
     }
 }

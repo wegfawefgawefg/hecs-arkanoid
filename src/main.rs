@@ -9,10 +9,12 @@ use window_helpers::{center_window, scale_and_blit_render_texture_to_window};
 mod audio;
 mod audio_playing;
 mod components;
+mod entity_archetypes;
 mod game_mode_transitions;
 mod input_processing;
 mod level_data;
 mod message_stream;
+mod physics_engine;
 mod render;
 mod render_commands;
 mod state;
@@ -79,9 +81,9 @@ fn main() {
         ////////////////    AUDIO STEP  ////////////////
         execute_audio_command_buffer(&mut rl, &mut audio, &mut state.audio_command_buffer);
 
-        audio // UNMUTE THIS TO HEAR THE MUSIC
-            .rl_audio_device
-            .update_music_stream(&mut audio.songs[Song::Playing as usize]);
+        // audio // UNMUTE THIS TO HEAR THE MUSIC
+        //     .rl_audio_device
+        //     .update_music_stream(&mut audio.songs[Song::Playing as usize]);
 
         ////////////////    DRAWING  ////////////////
         let mut draw_handle = rl.begin_drawing(&rlt);

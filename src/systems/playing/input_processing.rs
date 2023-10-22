@@ -3,22 +3,30 @@ use hecs::World;
 use crate::{
     components::{CTransform, Paddle, Physics},
     game_mode_transitions::spawn_level,
+    physics_engine::p2m,
     state::{State, LEVEL_CHANGE_DELAY_DEFAULT},
 };
 
-const PLAYER_BASE_MOVE_SPEED: f32 = 10.0;
+const PLAYER_BASE_MOVE_SPEED: f32 = 300.0;
 
 pub fn process_inputs(ecs: &mut World, state: &mut State) {
-    for (_, (_, ctransform, physics)) in ecs
-        .query::<(&Paddle, &mut CTransform, &mut Physics)>()
-        .iter()
-    {
-        if state.playing_inputs.right {
-            physics.vel.x = PLAYER_BASE_MOVE_SPEED;
-        } else if state.playing_inputs.left {
-            physics.vel.x = -PLAYER_BASE_MOVE_SPEED;
-        } else {
-            physics.vel.x = 0.0;
+    for (entity, paddle) in ecs.query::<&Paddle>().iter() {
+        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+            if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
+                if state.playing_inputs.right {
+                    rigid_body.set_linvel(
+                        nalgebra::Vector2::new(p2m(PLAYER_BASE_MOVE_SPEED), 0.0),
+                        true,
+                    );
+                } else if state.playing_inputs.left {
+                    rigid_body.set_linvel(
+                        nalgebra::Vector2::new(-p2m(PLAYER_BASE_MOVE_SPEED), 0.0),
+                        true,
+                    );
+                } else {
+                    rigid_body.set_linvel(nalgebra::Vector2::new(0.0, 0.0), true);
+                }
+            }
         }
     }
 

@@ -11,6 +11,7 @@ pub struct CTransform {
 pub struct Player;
 
 pub struct Ball;
+pub struct Bouncy;
 
 pub struct InputControlled;
 
@@ -26,6 +27,7 @@ pub struct Paddle {
     pub size: u32,
 }
 
+#[derive(Clone, Copy)]
 pub struct Shape {
     pub dims: Vec2,
 }
@@ -36,6 +38,8 @@ pub struct Physics {
 }
 
 pub struct CaptureInPlayField;
+
+pub struct FreeToLeavePlayField;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Score {
@@ -69,3 +73,10 @@ pub struct LookAt {
 
 #[derive(Clone, Copy)]
 pub struct Enemy;
+
+pub struct Wall {
+    pub color: Color,
+}
+
+pub struct HasRigidBody;
+pub struct HasSensor;
