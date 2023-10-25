@@ -1,7 +1,7 @@
 use glam::Vec2;
 use hecs::{Entity, World};
 use nalgebra::vector;
-use rapier2d::prelude::{ColliderBuilder, Point, RigidBodyBuilder};
+use rapier2d::prelude::{ActiveEvents, ColliderBuilder, Point, RigidBodyBuilder};
 use raylib::prelude::Color;
 
 use crate::{
@@ -182,6 +182,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
     let ball_collider = ColliderBuilder::ball(p2m(8.0) / 2.0)
         .restitution(1.0)
         .friction(0.0)
+        .active_events(ActiveEvents::COLLISION_EVENTS)
         .build();
     let ball_rigid_body = RigidBodyBuilder::dynamic()
         .translation(vector![p2m(pos.x), p2m(pos.y)])
@@ -190,7 +191,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         .linear_damping(0.0)
         .angular_damping(0.0)
         .can_sleep(false)
-        // .ccd_enabled(true)
+        .ccd_enabled(true)
         .build();
     let ball_body_handle = state.physics.rigid_body_set.insert(ball_rigid_body);
     state.physics.collider_set.insert_with_parent(

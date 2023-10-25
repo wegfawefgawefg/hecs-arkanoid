@@ -30,9 +30,9 @@ pub fn playing_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
 
     systems::playing::input_processing::process_inputs(ecs, state);
     systems::playing::physics::physics(ecs, state);
+    systems::playing::physics::damage_blocks(ecs, state);
     // systems::playing::physics::boundary_checking(ecs, state);
     systems::playing::rendering::render(ecs, state);
-    systems::playing::physics::damage_blocks(ecs, state);
 }
 
 pub fn game_over_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {}

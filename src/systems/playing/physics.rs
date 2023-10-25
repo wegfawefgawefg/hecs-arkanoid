@@ -55,17 +55,10 @@ pub fn physics(ecs: &World, state: &mut State) {
 
 #[allow(clippy::option_map_unit_fn)]
 pub fn damage_blocks(ecs: &mut World, state: &mut State) {
-    // Go through collision_recv events
-    let result = state
-        .physics
-        .collision_recv
-        .recv_timeout(Duration::from_millis(1));
-    if let Ok(_) = result {
-        println!("collision")
-    };
-
     while let Ok(event) = state.physics.collision_recv.try_recv() {
-        println!("collision event");
+        if event.started() {
+            continue;
+        }
         // Fetch the entities associated with the handles from the event
         let mut rigid_body_handle_a: Option<RigidBodyHandle> = None;
         let mut rigid_body_handle_b: Option<RigidBodyHandle> = None;
