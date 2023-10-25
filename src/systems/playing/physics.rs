@@ -1,7 +1,9 @@
 use std::char::MAX;
+use std::time::Duration;
 
 use glam::Vec2;
 use hecs::{Entity, World};
+use rapier2d::prelude::{RigidBody, RigidBodyHandle};
 use raylib::ffi::remove;
 
 use crate::components::{
@@ -51,16 +53,29 @@ pub fn physics(ecs: &World, state: &mut State) {
     }
 }
 
+#[allow(clippy::option_map_unit_fn)]
 pub fn damage_blocks(ecs: &mut World, state: &mut State) {
     // Go through collision_recv events
+    let result = state
+        .physics
+        .collision_recv
+        .recv_timeout(Duration::from_millis(1));
+    if let Ok(_) = result {
+        println!("collision")
+    };
+
     while let Ok(event) = state.physics.collision_recv.try_recv() {
+        println!("collision event");
         // Fetch the entities associated with the handles from the event
+        let mut rigid_body_handle_a: Option<RigidBodyHandle> = None;
+        let mut rigid_body_handle_b: Option<RigidBodyHandle> = None;
         state
             .physics
             .collider_set
             .get(event.collider1())
             .and_then(|collider_a| collider_a.parent())
             .and_then(|rigid_body_a| {
+                rigid_body_handle_a = Some(rigid_body_a);
                 state
                     .physics
                     .get_entity_from_rigid_body_handle(rigid_body_a)
@@ -72,6 +87,7 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
                     .get(event.collider2())
                     .and_then(|collider_b| collider_b.parent())
                     .and_then(|rigid_body_b| {
+                        rigid_body_handle_b = Some(rigid_body_b);
                         state
                             .physics
                             .get_entity_from_rigid_body_handle(rigid_body_b)
@@ -79,80 +95,103 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
                     })
             })
             .map(|(entity_a, entity_b)| {
+                //////////////// CASE A IS BALL AND B IS BLOCK  ////////////////
                 // check if a is a ball
-                let mut a_is_ball = false;
-                if let Ok(query) = ecs.query_one::<&Ball>(entity_a) {
-                    if let Some(ball) = query.get() {
-                        a_is_ball = true;
-                    }
-                }
+                let a_is_ball = ecs.satisfies::<&Ball>(entity_a).unwrap_or(false);
 
                 // if a is a ball, and b is block, decrement hp, and mark b for removal
+
                 let mut remove_b = false;
                 if a_is_ball {
-                    if let Ok((block, health)) =
-                        ecs.query_one_mut::<(&Block, &mut Health)>(entity_b)
-                    {
-                        if health.hp > 0 {
-                            health.hp -= 1;
-                        }
-                        if health.hp == 0 {
-                            remove_b = true;
-                        }
-                    }
+                    remove_b = ecs.satisfies::<&Block>(entity_b).unwrap_or(false);
                 }
-
-                // you are removing on contact, this is in the weeds. good luck
+                // if a_is_ball {
+                //     if let Ok((_block, health)) =
+                //         ecs.query_one_mut::<(&Block, &mut Health)>(entity_b)
+                //     {
+                //         remove_b = true;
+                //         // if health.hp > 0 {
+                //         //     health.hp -= 1;
+                //         // }
+                //         // if health.hp == 0 {
+                //         //     remove_b = true;
+                //         // }
+                //     }
+                // }
 
                 if remove_b {
-                    ecs.remove(entity_b);
+                    let _ = ecs.take(entity_b);
                     state.physics.remove_rigid_body_mapping(entity_b);
-                    state.physics.
+                    if let Some(b_handle) = rigid_body_handle_b {
+                        state.physics.rigid_body_set.remove(
+                            b_handle,
+                            &mut state.physics.island_manager,
+                            &mut state.physics.collider_set,
+                            &mut state.physics.impulse_joint_set,
+                            &mut state.physics.multibody_joint_set,
+                            true, // remove the associated colliders as well
+                        );
+                    }
+                    return;
                 }
 
+                //////////////// CASE A IS BALL AND B IS BLOCK  ////////////////
                 // check if b is a ball
-                let mut b_is_ball = false;
-                if let Ok(query) = ecs.query_one::<&Ball>(entity_b) {
-                    if let Some(ball) = query.get() {
-                        b_is_ball = true;
-                    }
-                }
+                let b_is_ball = ecs.satisfies::<&Ball>(entity_b).unwrap_or(false);
 
                 // if b is a ball, and a is a block, decrement hp, and mark a for removal
                 let mut remove_a = false;
                 if b_is_ball {
-                    if let Ok((block, health)) =
-                        ecs.query_one_mut::<(&Block, &mut Health)>(entity_a)
-                    {
-                        if health.hp > 0 {
-                            health.hp -= 1;
-                        }
-                        if health.hp == 0 {
-                            remove_b = true;
-                        }
+                    remove_a = ecs.satisfies::<&Block>(entity_a).unwrap_or(false);
+                }
+                // let mut remove_a = false;
+                // if b_is_ball {
+                //     if let Ok((block, health)) =
+                //         ecs.query_one_mut::<(&Block, &mut Health)>(entity_a)
+                //     {
+                //         if health.hp > 0 {
+                //             health.hp -= 1;
+                //         }
+                //         if health.hp == 0 {
+                //             remove_b = true;
+                //         }
+                //     }
+                // }
+                if remove_a {
+                    let _ = ecs.take(entity_a);
+                    state.physics.remove_rigid_body_mapping(entity_a);
+                    if let Some(a_handle) = rigid_body_handle_a {
+                        state.physics.rigid_body_set.remove(
+                            a_handle,
+                            &mut state.physics.island_manager,
+                            &mut state.physics.collider_set,
+                            &mut state.physics.impulse_joint_set,
+                            &mut state.physics.multibody_joint_set,
+                            true, // remove the associated colliders as well
+                        );
                     }
                 }
             });
     }
 
     // Remove blocks with 0 or less HP
-    let mut to_remove = Vec::new();
-    for (entity, health) in ecs.query::<&Health>().with::<&Block>().iter() {
-        if health.value <= 0 {
-            to_remove.push(entity);
-        }
-    }
+    // let mut to_remove = Vec::new();
+    // for (entity, health) in ecs.query::<&Health>().with::<&Block>().iter() {
+    //     if health.value <= 0 {
+    //         to_remove.push(entity);
+    //     }
+    // }
 
     // Remove physics and ECS entities
-    for entity in to_remove {
-        // Remove physics bodies and bindings
-        if let Some(handle) = state.physics.get_rigid_body_handle(entity) {
-            state.physics.rigid_body_set.remove(handle);
-        }
+    // for entity in to_remove {
+    //     // Remove physics bodies and bindings
+    //     if let Some(handle) = state.physics.get_rigid_body_handle(entity) {
+    //         state.physics.rigid_body_set.remove(handle);
+    //     }
 
-        // Remove from ECS
-        ecs.despawn(entity);
-    }
+    //     // Remove from ECS
+    //     ecs.despawn(entity);
+    // }
 }
 
 pub fn bounce(ecs: &World, state: &mut State) {

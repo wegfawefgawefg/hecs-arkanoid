@@ -190,7 +190,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         .linear_damping(0.0)
         .angular_damping(0.0)
         .can_sleep(false)
-        .ccd_enabled(true)
+        // .ccd_enabled(true)
         .build();
     let ball_body_handle = state.physics.rigid_body_set.insert(ball_rigid_body);
     state.physics.collider_set.insert_with_parent(
