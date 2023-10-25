@@ -1,0 +1,34 @@
+game over when out of lives
+lives
+display lives
+ball drop lives decrease
+level advance state when all blocks are gone
+
+power up chance when block breaks
+power up drifts down slowly
+if you catch it with your paddle, it activates
+
+----------
+powerups:
+
+ball speed up
+ball split
+paddle lasers
+fire ball
+paddle enlarge
+paddle shrink
+ball slow down
+
+----------
+sounds:
+each power up
+block bounce (didnt die)
+block bounce (died)
+drop ball
+gameover
+next level
+next level begin
+
+----------
+particle effects:
+copy ur shit from splonks in
