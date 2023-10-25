@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub fn render(ecs: &World, state: &mut State) {
-    render_physics(state);
+    // render_physics(state);
 
     let mut cursor = Vec2::new(20.0, 20.0);
     for (_, physics) in ecs.query::<&Physics>().with::<&Ball>().iter() {

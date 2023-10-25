@@ -182,6 +182,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
     let ball_collider = ColliderBuilder::ball(p2m(8.0) / 2.0)
         .restitution(1.0)
         .friction(0.0)
+        .mass(0.0001)
         .active_events(ActiveEvents::COLLISION_EVENTS)
         .build();
     let ball_rigid_body = RigidBodyBuilder::dynamic()
@@ -218,6 +219,7 @@ pub fn spawn_block(ecs: &mut World, state: &mut State, pos: Vec2, shape: Vec2, c
 
     let block_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
         .restitution(1.0)
+        .friction(0.0)
         .build();
     let block_rigid_body = RigidBodyBuilder::fixed()
         .translation(vector![
