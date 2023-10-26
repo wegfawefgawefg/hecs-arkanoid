@@ -1,3 +1,7 @@
+
+--------------------------------------------------
+                    GAMEPLAY
+--------------------------------------------------
 try managing the balls velocity:
 method 1: managed thing where you manage the velocity during the collision itself
 method 2: just always setting the velocity after each physics step.
@@ -6,7 +10,7 @@ game over when out of lives
 lives
 display lives
 ball drop lives decrease
-level advance state when all blocks are gone
+level advance state when all nonmetal blocks are gone
 
 power up chance when block breaks
 power up drifts down slowly
@@ -23,8 +27,9 @@ paddle enlarge
 paddle shrink
 ball slow down
 
-----------
-sounds:
+--------------------------------------------------
+                    AUDIO
+--------------------------------------------------
 each power up
 block bounce (didnt die)
 block bounce (died)
@@ -33,6 +38,16 @@ gameover
 next level
 next level begin
 
-----------
+--------------------------------------------------
+                    GRAPHICS
+--------------------------------------------------
 particle effects:
 copy ur shit from splonks in
+
+
+
+
+--------------------------------------------------
+                    BUGS
+--------------------------------------------------
+ball can get stuck between two blocks without colliding them
