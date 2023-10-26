@@ -39,6 +39,8 @@ pub struct PhysicsEngine {
     pub contact_force_recv: Receiver<ContactForceEvent>,
     pub event_handler: ChannelEventCollector,
 
+    pub collision_events: Vec<CollisionEvent>,
+
     pub rigid_body_set: RigidBodySet,
     pub collider_set: ColliderSet,
 }
@@ -147,6 +149,8 @@ impl PhysicsEngine {
 
             rigid_body_set,
             collider_set,
+
+            collision_events: Vec::new(),
         }
     }
 

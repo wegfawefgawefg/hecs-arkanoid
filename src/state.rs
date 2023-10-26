@@ -1,5 +1,7 @@
 use glam::Vec2;
+use hecs::Entity;
 use rand::{rngs::StdRng, SeedableRng};
+use rapier2d::prelude::RigidBodyHandle;
 
 use crate::{
     audio_playing::AudioCommandBuffer,
@@ -42,6 +44,8 @@ pub struct State {
     pub level_change_delay: u32,
 
     pub physics: PhysicsEngine,
+
+    pub deletion_events: Vec<DeletionEvent>,
 }
 
 impl State {
@@ -61,6 +65,8 @@ impl State {
         let mouse_screen_pos = Vec2::ZERO;
 
         let physics = PhysicsEngine::new();
+
+        let deletion_events: Vec<DeletionEvent> = Vec::new();
 
         Self {
             running: true,
@@ -85,6 +91,13 @@ impl State {
             level_change_delay: 0,
 
             physics,
+
+            deletion_events,
         }
     }
+}
+
+pub enum DeletionEvent {
+    Entity { entity: Entity },
+    Physics { entity: Entity },
 }

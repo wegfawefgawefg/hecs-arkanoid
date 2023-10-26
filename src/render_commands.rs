@@ -13,6 +13,7 @@ pub enum RenderCommand {
         pos: Vec2,
         dims: Vec2,
         color: Color,
+        hp: u32,
     },
     Ball {
         pos: Vec2,
@@ -64,13 +65,27 @@ pub fn execute_render_command_buffer(
             RenderCommand::ColoredSquare { pos, color } => {
                 d.draw_rectangle(pos.x as i32, pos.y as i32, SIZE, SIZE, *color);
             }
-            RenderCommand::Block { pos, dims, color } => d.draw_rectangle_lines(
-                pos.x as i32,
-                pos.y as i32,
-                dims.x as i32,
-                dims.y as i32,
+            RenderCommand::Block {
+                pos,
+                dims,
                 color,
-            ),
+                hp,
+            } => {
+                d.draw_rectangle_lines(
+                    pos.x as i32,
+                    pos.y as i32,
+                    dims.x as i32,
+                    dims.y as i32,
+                    color,
+                );
+                if *hp > 1 {
+                    d.draw_line_v(
+                        Vector2::new(pos.x, pos.y),
+                        Vector2::new(pos.x + dims.x - 1.0, pos.y + dims.y),
+                        *color,
+                    );
+                }
+            }
             RenderCommand::Paddle { pos, dims, color } => d.draw_rectangle_lines(
                 pos.x as i32,
                 pos.y as i32,

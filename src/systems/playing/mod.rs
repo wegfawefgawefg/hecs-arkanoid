@@ -1,3 +1,4 @@
+pub mod cleanup;
 pub mod enemy_behaviour;
 pub mod input_processing;
 pub mod physics;

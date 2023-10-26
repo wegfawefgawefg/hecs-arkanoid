@@ -77,7 +77,7 @@ pub fn playing_init_state(ecs: &mut World, state: &mut State) {
     // spawn ball
 
     // spawn a few random balls
-    for _ in 0..1 {
+    for _ in 0..20 {
         let pos = Vec2::new(
             rand::thread_rng().gen_range(0.0..DIMS.x as f32),
             rand::thread_rng().gen_range(0.0..DIMS.y as f32),
@@ -146,8 +146,9 @@ pub fn spawn_level(ecs: &mut World, state: &mut State, level: u32) {
     delete_all_blocks(ecs, state);
 
     // clamp level between 0 and 35
-    let level = level.clamp(0, 35);
-    let level_data = level_data::LEVEL_BLOCK_DATA[level as usize];
+    let level = level.clamp(1, 36);
+    let level_index = (level - 1) as usize;
+    let level_data = level_data::LEVEL_BLOCK_DATA[level_index];
     const GAP_SIZE: f32 = 1.0;
     const BLOCK_WIDTH: f32 = 20.0;
     const BLOCK_HEIGHT: f32 = 8.0;
@@ -172,7 +173,9 @@ pub fn spawn_level(ecs: &mut World, state: &mut State, level: u32) {
             let color = level_data::RL_COLOR_PALETTE[color_index as usize];
 
             // put a block
-            spawn_block(ecs, state, cursor, BLOCK_SHAPE, color);
+            // hp is either 1 or 2 if color_index is 9
+            let hp = if color_index == 9 { 2 } else { 1 };
+            spawn_block(ecs, state, cursor, BLOCK_SHAPE, color, hp);
 
             // advance cursor x by block width
             cursor.x += BLOCK_WIDTH;

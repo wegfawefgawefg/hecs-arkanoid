@@ -5,7 +5,7 @@ use rapier2d::prelude::*;
 use raylib::prelude::Color;
 
 use crate::{
-    components::{Ball, Block, CTransform, Paddle, Physics, Player, Shape, Wall},
+    components::{Ball, Block, CTransform, Health, Paddle, Physics, Player, Shape, Wall},
     physics_engine::m2p,
     render_commands::RenderCommand,
     state::State,
@@ -45,11 +45,14 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render every block
-    for (_, (block, ctransform, shape)) in ecs.query::<(&Block, &CTransform, &Shape)>().iter() {
+    for (_, (block, ctransform, shape, health)) in
+        ecs.query::<(&Block, &CTransform, &Shape, &Health)>().iter()
+    {
         state.render_command_buffer.push(RenderCommand::Block {
             pos: ctransform.pos,
             dims: shape.dims,
             color: block.color,
+            hp: health.hp,
         })
     }
 
@@ -91,6 +94,7 @@ pub fn render_physics(state: &mut State) {
                     pos: ppos,
                     dims: psize,
                     color: Color::RED, // or any color you prefer for debug
+                    hp: 1,
                 });
             }
             // Add more shape types here if needed

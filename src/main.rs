@@ -95,10 +95,9 @@ fn main() {
             state.audio_command_buffer.clear();
 
             step::step(&mut rl, &mut ecs, &mut state);
+            ////////////////    AUDIO STEP  ////////////////
+            execute_audio_command_buffer(&mut rl, &mut audio, &mut state.audio_command_buffer);
         }
-
-        ////////////////    AUDIO STEP  ////////////////
-        execute_audio_command_buffer(&mut rl, &mut audio, &mut state.audio_command_buffer);
 
         // audio // UNMUTE THIS TO HEAR THE MUSIC
         //     .rl_audio_device

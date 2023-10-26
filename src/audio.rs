@@ -16,6 +16,19 @@ pub enum SoundEffect {
     ExplosionOne,
     ExplosionTwo,
     ExplosionThree,
+
+    BallBounce1,
+    BallBounce2,
+    BallBounce3,
+    BallBounce4,
+
+    BallSturdyBlockBounce,
+
+    BallHitPaddle,
+    BallWallBounce,
+
+    LevelStart,
+    LevelWin,
 }
 
 pub struct Audio {
@@ -81,5 +94,18 @@ pub fn get_sound_file_name(sound_effect: SoundEffect) -> &'static str {
         SoundEffect::ExplosionOne => "explosion_1",
         SoundEffect::ExplosionTwo => "explosion_2",
         SoundEffect::ExplosionThree => "explosion_3",
+
+        SoundEffect::BallBounce1 => "ball_bounce_1",
+        SoundEffect::BallBounce2 => "ball_bounce_2",
+        SoundEffect::BallBounce3 => "ball_bounce_3",
+        SoundEffect::BallBounce4 => "ball_bounce_4",
+
+        SoundEffect::BallSturdyBlockBounce => "sturdy_block_bounced_on",
+
+        SoundEffect::BallHitPaddle => "ball_hit_paddle",
+        SoundEffect::BallWallBounce => "ball_wall_bounce",
+
+        SoundEffect::LevelStart => "level_start",
+        SoundEffect::LevelWin => "level_win",
     }
 }

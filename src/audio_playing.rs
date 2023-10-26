@@ -12,10 +12,13 @@ pub type AudioCommandBuffer = Vec<AudioCommand>;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum AudioCommand {
-    AsteroidExplosion,
-    Shoot,
-    PlayerExplosion,
-    PlayerHit,
+    BallWallBounce,
+    BallBlockBounce,
+    BallPaddleBounce,
+    BallSturdyBlockBounce,
+
+    LevelStart,
+    LevelWin,
 }
 
 pub fn execute_audio_command_buffer(
@@ -27,23 +30,45 @@ pub fn execute_audio_command_buffer(
     let mut rng = rand::thread_rng();
     for command in unique_commands.iter() {
         match command {
-            AudioCommand::Shoot => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::SmallLaser as usize]);
-            }
-            AudioCommand::AsteroidExplosion => {
+            AudioCommand::BallBlockBounce => {
                 let explosion_variants = [
-                    SoundEffect::ExplosionOne as usize,
-                    SoundEffect::ExplosionTwo as usize,
-                    SoundEffect::ExplosionThree as usize,
+                    SoundEffect::BallBounce1 as usize,
+                    SoundEffect::BallBounce2 as usize,
+                    SoundEffect::BallBounce3 as usize,
+                    SoundEffect::BallBounce4 as usize,
                 ];
-                let random_explosion = explosion_variants[rng.gen_range(0..3)];
+                let random_explosion = explosion_variants[rng.gen_range(0..4)];
                 audio
                     .rl_audio_device
                     .play_sound(&audio.sounds[random_explosion]);
+                println!("Playing sound ball bounce");
             }
-            _ => {}
+            AudioCommand::BallWallBounce => {
+                audio
+                    .rl_audio_device
+                    .play_sound(&audio.sounds[SoundEffect::BallWallBounce as usize]);
+            }
+            AudioCommand::BallSturdyBlockBounce => {
+                audio
+                    .rl_audio_device
+                    .play_sound(&audio.sounds[SoundEffect::BallSturdyBlockBounce as usize]);
+            }
+            AudioCommand::BallPaddleBounce => {
+                audio
+                    .rl_audio_device
+                    .play_sound(&audio.sounds[SoundEffect::BallHitPaddle as usize]);
+                println!("Playing sound ball paddle bounce");
+            }
+            AudioCommand::LevelStart => {
+                audio
+                    .rl_audio_device
+                    .play_sound(&audio.sounds[SoundEffect::LevelStart as usize]);
+            }
+            AudioCommand::LevelWin => {
+                audio
+                    .rl_audio_device
+                    .play_sound(&audio.sounds[SoundEffect::LevelWin as usize]);
+            }
         }
     }
 }
