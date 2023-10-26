@@ -3,18 +3,69 @@ use std::time::Duration;
 
 use glam::Vec2;
 use hecs::{Entity, World};
-use rapier2d::prelude::{RigidBody, RigidBodyHandle};
+use nalgebra::{Vector, Vector2};
+use rapier2d::prelude::{Real, RigidBody, RigidBodyHandle};
 use raylib::ffi::remove;
 
 use crate::components::{
     Ball, Block, Bouncy, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle, Physics,
     Shape,
 };
-use crate::physics_engine::m2p;
+use crate::physics_engine::{m2p, p2m};
 use crate::state::State;
 use crate::DIMS;
 
-const MAX_VEL: f32 = 2.0;
+const MAX_VEL: f32 = 200.0;
+
+// pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
+//     // every ball object that has a rigid body needs to copy its vel over to the physics
+//     for (entity, physics) in ecs.query::<&mut Physics>().with::<&HasRigidBody>().iter() {
+//         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+//             if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
+//                 // copy from physics to rigid body
+//                 physics.vel = physics.vel.normalize() * MAX_VEL;
+//                 let vel = Vector2::new(p2m(physics.vel.x), p2m(physics.vel.y));
+//                 rigid_body.set_linvel(vel, true);
+//             }
+//         }
+//     }
+// }
+const ANGLES: [f32; 2] = [30.0, 60.0]; // Angles to snap to
+pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
+    for (entity, physics) in ecs.query::<&mut Physics>().with::<&HasRigidBody>().iter() {
+        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+            if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
+                // Compute current angle in degrees
+                let angle_current =
+                    physics.vel.y.atan2(physics.vel.x) * (180.0 / std::f32::consts::PI);
+
+                // Find closest snap angle
+                let closest_angle = ANGLES
+                    .iter()
+                    .copied()
+                    .min_by(|a, b| {
+                        (a - angle_current.abs())
+                            .abs()
+                            .partial_cmp(&(b - angle_current.abs()).abs())
+                            .unwrap()
+                    })
+                    .unwrap_or(angle_current.abs());
+
+                // Convert closest_angle back to radians
+                let closest_angle_rad = closest_angle.to_radians();
+
+                // Set new velocity based on closest angle and MAX_VEL
+                physics.vel.x = closest_angle_rad.cos() * MAX_VEL * physics.vel.x.signum();
+                physics.vel.y = closest_angle_rad.sin() * MAX_VEL * physics.vel.y.signum();
+
+                // Update the physics engine
+                let vel = Vector2::new(p2m(physics.vel.x), p2m(physics.vel.y));
+                rigid_body.set_linvel(vel, true);
+            }
+        }
+    }
+}
+
 pub fn physics(ecs: &World, state: &mut State) {
     state.physics.step();
 
@@ -216,6 +267,7 @@ pub fn boundary_checking(ecs: &World, state: &mut State) {
         }
     }
 }
+
 // pub fn physics(ecs: &mut World, state: &mut State) {
 // let query = <&mut Physics>::query();
 // for physics in query.filter(!component::<velUncapped>()).iter_mut(ecs) {

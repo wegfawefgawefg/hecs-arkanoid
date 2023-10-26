@@ -45,9 +45,8 @@ particle effects:
 copy ur shit from splonks in
 
 
-
-
 --------------------------------------------------
                     BUGS
 --------------------------------------------------
 ball can get stuck between two blocks without colliding them
+ball can leave the screen through the corners, so expand the walls a little bit

@@ -45,7 +45,7 @@ pub struct PhysicsEngine {
 
 impl PhysicsEngine {
     pub fn new() -> Self {
-        let gravity = vector![0.0, 2.0];
+        let gravity = vector![0.0, 0.0];
         let integration_parameters = IntegrationParameters::default();
         let physics_pipeline = PhysicsPipeline::new();
         let island_manager = IslandManager::new();
