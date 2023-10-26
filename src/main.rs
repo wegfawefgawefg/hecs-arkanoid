@@ -51,6 +51,12 @@ fn main() {
             println!("Error creating render texture: {}", e);
             std::process::exit(1);
         });
+    let mut large_render_texture = rl
+        .load_render_texture(&rlt, window_dims.x, window_dims.y)
+        .unwrap_or_else(|e| {
+            println!("Error creating render texture: {}", e);
+            std::process::exit(1);
+        });
 
     let mut shaders: Vec<Shader> = vec![];
     let texture_names = vec!["grayscale.fs"];
@@ -108,8 +114,10 @@ fn main() {
             render::draw(&state, low_res_draw_handle);
         }
         scale_and_blit_render_texture_to_window(
+            &rlt,
             &mut draw_handle,
             &mut render_texture,
+            &mut large_render_texture,
             fullscreen,
             window_dims,
             &shaders,

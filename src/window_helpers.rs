@@ -11,12 +11,27 @@ pub fn center_window(rl: &mut raylib::RaylibHandle, window_dims: UVec2) {
     rl.set_target_fps(144);
 }
 
+/*
+
+    ////////////////    DRAWING  ////////////////
+    let mut draw_handle = rl.begin_drawing(&rlt);
+    {
+        let low_res_draw_handle =
+            &mut draw_handle.begin_texture_mode(&rlt, &mut render_texture);
+        low_res_draw_handle.clear_background(Color::BLACK);
+
+        render::draw(&state, low_res_draw_handle);
+    }
+*/
+
 pub fn scale_and_blit_render_texture_to_window(
+    rlt: &RaylibThread,
     draw_handle: &mut RaylibDrawHandle,
     render_texture: &mut RenderTexture2D,
+    large_render_texture: &mut RenderTexture2D,
     fullscreen: bool,
     window_dims: UVec2,
-    shaders: &Vec<Shader>,
+    shaders: &[Shader],
 ) {
     let source_rec = Rectangle::new(
         0.0,
@@ -36,9 +51,30 @@ pub fn scale_and_blit_render_texture_to_window(
 
     let origin = Vector2::new(0.0, 0.0);
 
+    {
+        let high_res_draw_handle = &mut draw_handle.begin_texture_mode(rlt, large_render_texture);
+        high_res_draw_handle.clear_background(Color::BLACK);
+        high_res_draw_handle.draw_texture_pro(
+            render_texture,
+            source_rec,
+            dest_rec,
+            origin,
+            0.0,
+            Color::WHITE,
+        );
+    }
+
+    // now draw the large render texture to the screen
+    let source_rec = Rectangle::new(
+        0.0,
+        0.0,
+        large_render_texture.texture.width as f32,
+        -large_render_texture.texture.height as f32,
+    );
+    let dest_rec = Rectangle::new(0.0, 0.0, window_dims.x as f32, window_dims.y as f32);
     let mut shaded_draw_handle = draw_handle.begin_shader_mode(&shaders[0]);
     shaded_draw_handle.draw_texture_pro(
-        render_texture,
+        large_render_texture,
         source_rec,
         dest_rec,
         origin,
