@@ -179,7 +179,8 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         Bouncy,
         HasRigidBody,
     ));
-    let ball_collider = ColliderBuilder::ball(p2m(8.0) / 2.0)
+    // let ball_collider = ColliderBuilder::ball(p2m(8.0) / 2.0)
+    let ball_collider = ColliderBuilder::cuboid(p2m(4.0) / 2.0, p2m(4.0) / 2.0)
         .restitution(1.0)
         .friction(0.0)
         .mass(0.0001)
