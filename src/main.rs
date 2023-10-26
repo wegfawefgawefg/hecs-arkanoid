@@ -52,6 +52,19 @@ fn main() {
             std::process::exit(1);
         });
 
+    let mut shaders: Vec<Shader> = vec![];
+    let texture_names = vec!["grayscale.fs"];
+    for name in texture_names {
+        let path = format!("src/shaders/{}", name);
+        match rl.load_shader(&rlt, None, Some(&path)) {
+            Ok(shader) => shaders.push(shader),
+            Err(e) => {
+                println!("Error loading shader: {}", e);
+                std::process::exit(1);
+            }
+        };
+    }
+
     ////////////////    INIT AUDIO    ////////////////
     let mut audio = audio::Audio::new(&mut rl, &rlt);
     audio
@@ -99,6 +112,7 @@ fn main() {
             &mut render_texture,
             fullscreen,
             window_dims,
+            &shaders,
         );
     }
 }

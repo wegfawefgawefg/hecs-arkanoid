@@ -16,6 +16,7 @@ pub fn scale_and_blit_render_texture_to_window(
     render_texture: &mut RenderTexture2D,
     fullscreen: bool,
     window_dims: UVec2,
+    shaders: &Vec<Shader>,
 ) {
     let source_rec = Rectangle::new(
         0.0,
@@ -35,7 +36,8 @@ pub fn scale_and_blit_render_texture_to_window(
 
     let origin = Vector2::new(0.0, 0.0);
 
-    draw_handle.draw_texture_pro(
+    let mut shaded_draw_handle = draw_handle.begin_shader_mode(&shaders[0]);
+    shaded_draw_handle.draw_texture_pro(
         render_texture,
         source_rec,
         dest_rec,
