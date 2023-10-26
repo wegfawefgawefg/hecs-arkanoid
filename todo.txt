@@ -1,3 +1,7 @@
+try managing the balls velocity:
+method 1: managed thing where you manage the velocity during the collision itself
+method 2: just always setting the velocity after each physics step.
+
 game over when out of lives
 lives
 display lives
