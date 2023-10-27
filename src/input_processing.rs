@@ -8,8 +8,17 @@ pub fn process_input(rl: &mut RaylibHandle, state: &mut State) {
         GameMode::Title => {
             title_process_input(rl, state);
         }
+        GameMode::PrepareLevel => {
+            prepare_level_process_input(rl, state);
+        }
         GameMode::Playing => {
             playing_process_input(rl, state);
+        }
+        GameMode::LevelComplete => {
+            level_complete_process_input(rl, state);
+        }
+        GameMode::WinGame => {
+            win_game_process_input(rl, state);
         }
         GameMode::GameOver => {
             game_over_process_input(rl, state);
@@ -32,10 +41,12 @@ pub fn title_process_input(rl: &mut RaylibHandle, state: &mut State) {
         title_inputs.confirm = true;
     }
     if title_inputs.confirm {
-        state.next_game_mode = Some(GameMode::Playing);
+        state.next_game_mode = Some(GameMode::PrepareLevel);
     }
     state.title_inputs = title_inputs;
 }
+
+pub fn prepare_level_process_input(rl: &mut RaylibHandle, state: &mut State) {}
 
 pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_ESCAPE) {
@@ -64,14 +75,32 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     }
 
     // advance level up and down if right or left arrow key is pressed
-    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_RIGHT) && state.level < 35 {
-        inputs.next_level = true;
-    }
-    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_LEFT) && state.level > 0 {
-        inputs.previous_level = true;
-    }
+    // if rl.is_key_down(raylib::consts::KeyboardKey::KEY_RIGHT) && state.level < 35 {
+    //     inputs.next_level = true;
+    // }
+    // if rl.is_key_down(raylib::consts::KeyboardKey::KEY_LEFT) && state.level > 0 {
+    //     inputs.previous_level = true;
+    // }
 
     state.playing_inputs = inputs;
+}
+
+pub fn level_complete_process_input(rl: &mut RaylibHandle, state: &mut State) {}
+
+pub fn win_game_process_input(rl: &mut RaylibHandle, state: &mut State) {
+    if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_ESCAPE) {
+        state.running = false;
+    }
+
+    let mut title_inputs = TitleInputs { confirm: false };
+    if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_SPACE) {
+        title_inputs.confirm = true;
+    }
+
+    if title_inputs.confirm {
+        state.next_game_mode = Some(GameMode::Title);
+    }
+    state.title_inputs = title_inputs;
 }
 
 pub fn game_over_process_input(rl: &mut RaylibHandle, state: &mut State) {

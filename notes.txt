@@ -1,0 +1,28 @@
+start screen
+
+prepare level states:
+    spawn stuff in
+    announce level
+    short pause
+    spawn ball
+    -> goto play level
+
+play level
+    if no more blocks -> go to win level state
+    if no more lives -> go to game over
+
+
+win level states:
+    was last level -> go to win game
+    play jingle, 
+    short pause, 
+    -> goto prepare level state
+
+win game
+    show stats from the game, 
+    animate calculating total score
+    if press -> go to start screen
+
+game over
+    if press -> go to start screen
+

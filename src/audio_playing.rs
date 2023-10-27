@@ -41,7 +41,6 @@ pub fn execute_audio_command_buffer(
                 audio
                     .rl_audio_device
                     .play_sound(&audio.sounds[random_explosion]);
-                println!("Playing sound ball bounce");
             }
             AudioCommand::BallWallBounce => {
                 audio
@@ -57,7 +56,6 @@ pub fn execute_audio_command_buffer(
                 audio
                     .rl_audio_device
                     .play_sound(&audio.sounds[SoundEffect::BallHitPaddle as usize]);
-                println!("Playing sound ball paddle bounce");
             }
             AudioCommand::LevelStart => {
                 audio

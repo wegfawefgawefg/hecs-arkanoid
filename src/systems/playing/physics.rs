@@ -42,39 +42,56 @@ pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
         }
     }
 }
-
-const ANGLES: [f32; 2] = [30.0, 60.0]; // Angles to snap to
-pub fn set_ball_to_angles(ecs: &World, state: &mut State) {
+const ANGLE_45_IN_RAD: f32 = std::f32::consts::PI / 3.0;
+pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
     for (entity, physics) in ecs
         .query::<&mut Physics>()
         .with::<(&HasRigidBody, &Ball)>()
         .iter()
     {
-        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-            // Compute current angle in degrees
-            let angle_current = physics.vel.y.atan2(physics.vel.x) * (180.0 / std::f32::consts::PI);
+        if let Some(_body) = state.physics.get_rigid_body_handle(entity) {
+            let x_sign = physics.vel.x.signum();
+            let y_sign = physics.vel.y.signum();
 
-            // Find closest snap angle
-            let closest_angle = ANGLES
-                .iter()
-                .copied()
-                .min_by(|a, b| {
-                    (a - angle_current.abs())
-                        .abs()
-                        .partial_cmp(&(b - angle_current.abs()).abs())
-                        .unwrap()
-                })
-                .unwrap_or(angle_current.abs());
-
-            // Convert closest_angle back to radians
-            let closest_angle_rad = closest_angle.to_radians();
-
-            // Set new velocity based on closest angle and MAX_VEL
-            physics.vel.x = closest_angle_rad.cos() * MAX_VEL * physics.vel.x.signum();
-            physics.vel.y = closest_angle_rad.sin() * MAX_VEL * physics.vel.y.signum();
+            physics.vel.x = ANGLE_45_IN_RAD.cos() * MAX_VEL * x_sign;
+            physics.vel.y = ANGLE_45_IN_RAD.sin() * MAX_VEL * y_sign;
         }
     }
 }
+
+const ANGLES: [f32; 2] = [30.0, 60.0];
+// Angles to snap to
+// pub fn set_ball_to_angles(ecs: &World, state: &mut State) {
+//     for (entity, physics) in ecs
+//         .query::<&mut Physics>()
+//         .with::<(&HasRigidBody, &Ball)>()
+//         .iter()
+//     {
+//         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+//             // Compute current angle in degrees
+//             let angle_current = physics.vel.y.atan2(physics.vel.x) * (180.0 / std::f32::consts::PI);
+
+//             // Find closest snap angle
+//             let closest_angle = ANGLES
+//                 .iter()
+//                 .copied()
+//                 .min_by(|a, b| {
+//                     (a - angle_current.abs())
+//                         .abs()
+//                         .partial_cmp(&(b - angle_current.abs()).abs())
+//                         .unwrap()
+//                 })
+//                 .unwrap_or(angle_current.abs());
+
+//             // Convert closest_angle back to radians
+//             let closest_angle_rad = closest_angle.to_radians();
+
+//             // Set new velocity based on closest angle and MAX_VEL
+//             physics.vel.x = closest_angle_rad.cos() * MAX_VEL * physics.vel.x.signum();
+//             physics.vel.y = closest_angle_rad.sin() * MAX_VEL * physics.vel.y.signum();
+//         }
+//     }
+// }
 
 /// Collision events are emptied here so dont check collisions in step before this is called
 pub fn step_physics(ecs: &World, state: &mut State) {
@@ -172,6 +189,7 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
             //     remove_b = ecs.satisfies::<&Block>(entity_b).unwrap_or(false);
             // }
             if a_is_ball {
+                println!("a is a ball");
                 if let Ok((_block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_b) {
                     match health.hp {
                         0 => {}
@@ -220,7 +238,9 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
             // }
             // // let mut remove_a = false;
             if b_is_ball {
-                if let Ok((block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_b) {
+                println!("b is a ball");
+                if let Ok((block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_a) {
+                    println!("a is a block");
                     match health.hp {
                         0 => {}
                         1 => {

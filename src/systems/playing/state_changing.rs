@@ -1,34 +1,17 @@
-use glam::Vec2;
-use raylib::prelude::Color;
-
 use crate::{
-    components::{CTransform, Player},
+    audio_playing::AudioCommand,
+    components::{Block, CTransform, Player},
     render_commands::{RenderCommand, RenderCommandBuffer},
+    state::{GameMode, State},
     DIMS,
 };
+use glam::Vec2;
+use hecs::World;
+use raylib::prelude::Color;
 
-// pub fn game_over(ecs: &mut SubWorld, #[resource] render_command_buffer: &mut RenderCommandBuffer) {
-//     let mut players = <(Entity, &CTransform)>::query().filter(component::<Player>());
-//     if players.iter(ecs).count() == 0 {
-//         let mut cursor = Vec2::new(DIMS.x as f32 * 0.28, DIMS.y as f32 * 0.4);
-//         let title = "GAME OVER!";
-//         let size = 20;
-//         render_command_buffer.push(DrawCommand::Text {
-//             pos: cursor,
-//             text: title.to_string(),
-//             size,
-//             color: Color::RED,
-//         });
-
-//         cursor.y += size as f32 * 1.5;
-
-//         let subtitle = "press space";
-//         let size = 1;
-//         render_command_buffer.push(DrawCommand::Text {
-//             pos: cursor,
-//             text: subtitle.to_string(),
-//             size,
-//             color: Color::RED,
-//         });
-//     }
-// }
+pub fn check_for_level_complete(ecs: &World, state: &mut State) {
+    if ecs.query::<&Block>().iter().next().is_none() {
+        state.next_game_mode = Some(GameMode::LevelComplete);
+        state.audio_command_buffer.push(AudioCommand::LevelWin);
+    }
+}

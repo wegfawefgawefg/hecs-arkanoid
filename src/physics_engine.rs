@@ -10,7 +10,7 @@ use hecs::Entity;
 use rapier2d::dynamics::RigidBodyHandle;
 use std::collections::HashMap;
 
-const PIXELS_PER_METER: f32 = 100.0;
+const PIXELS_PER_METER: f32 = 120.0;
 const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
 
 pub fn m2p(m: f32) -> f32 {
@@ -63,71 +63,6 @@ impl PhysicsEngine {
 
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();
-
-        // stage physics init
-        //  ground is a segment at the bottom of the screen
-        // let ground_collider = ColliderBuilder::segment(
-        //     Point::new(0.0, DIMS.y as f32),
-        //     Point::new(DIMS.x as f32, DIMS.y as f32 - 1.0),
-        // )
-        // .build();
-        // collider_set.insert(ground_collider);
-
-        // // left wall
-        // let left_wall_collider =
-        //     ColliderBuilder::segment(Point::new(0.0, 0.0), Point::new(0.0, DIMS.y as f32)).build();
-        // collider_set.insert(left_wall_collider);
-
-        // // right wall
-        // let right_wall_collider = ColliderBuilder::segment(
-        //     Point::new(DIMS.x as f32, 0.0),
-        //     Point::new(DIMS.x as f32, DIMS.y as f32),
-        // )
-        // .build();
-        // collider_set.insert(right_wall_collider);
-
-        // // top wall
-        // let top_wall_collider =
-        //     ColliderBuilder::segment(Point::new(0.0, 0.0), Point::new(DIMS.x as f32, 0.0)).build();
-        // collider_set.insert(top_wall_collider);
-
-        // let ball_collider = ColliderBuilder::ball(10.0).restitution(0.9).build();
-        // let ball_rigid_body = RigidBodyBuilder::dynamic()
-        //     .translation(vector![DIMS.x as f32 / 2.0, 10.0])
-        //     .build();
-        // let ball_body_handle = rigid_body_set.insert(ball_rigid_body);
-        // collider_set.insert_with_parent(ball_collider, ball_body_handle, &mut rigid_body_set);
-
-        // spawn stuff
-        // let mut rng = rand::thread_rng();
-
-        // spawn a bunch of balls
-        // let num_balls = 100;
-        // for _ in 0..num_balls {
-        //     let ball_collider = ColliderBuilder::ball(4.0).restitution(0.9).build();
-        //     let ball_rigid_body = RigidBodyBuilder::dynamic()
-        //         .translation(vector![
-        //             rng.gen_range(0.0..DIMS.x as f32),
-        //             rng.gen_range(0.0..DIMS.y as f32)
-        //         ])
-        //         .build();
-        //     let ball_body_handle = rigid_body_set.insert(ball_rigid_body);
-        //     collider_set.insert_with_parent(ball_collider, ball_body_handle, &mut rigid_body_set);
-        // }
-
-        // spawn a bunch of boxes
-        // let num_boxes = 500;
-        // for _ in 0..num_boxes {
-        //     let box_collider = ColliderBuilder::cuboid(2.0, 2.0).restitution(0.9).build();
-        //     let box_rigid_body = RigidBodyBuilder::dynamic()
-        //         .translation(vector![
-        //             rng.gen_range(0.0..DIMS.x as f32),
-        //             rng.gen_range(0.0..DIMS.y as f32)
-        //         ])
-        //         .build();
-        //     let box_body_handle = rigid_body_set.insert(box_rigid_body);
-        //     collider_set.insert_with_parent(box_collider, box_body_handle, &mut rigid_body_set);
-        // }
 
         Self {
             ecs_to_rigid_body: HashMap::new(),

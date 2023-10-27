@@ -12,34 +12,45 @@ use crate::{
     entity_archetypes::{spawn_ball, spawn_block, spawn_paddle, spawn_walls},
     level_data,
     physics_engine::{m2p, p2m, PhysicsEngine},
-    state::{GameMode, State},
+    state::{GameMode, LevelCompleteMode, PrepareLevelMode, State},
     DIMS,
 };
 
 pub fn transition_game_mode(ecs: &mut World, state: &mut State) {
+    // TODO: rip out the transition_game_mode abstraction
     if let Some(transition_to) = state.next_game_mode {
         match transition_to {
             GameMode::Title => {
                 title_init_state(ecs, state);
             }
+            GameMode::PrepareLevel => {
+                prepare_level_init_state(ecs, state);
+            }
             GameMode::Playing => {
                 playing_init_state(ecs, state);
             }
+            GameMode::LevelComplete => {
+                level_complete_init_state(ecs, state);
+            }
+            GameMode::WinGame => {
+                win_game_init_state(ecs, state);
+            }
             GameMode::GameOver => game_over_init_state(ecs, state),
         }
+        state.game_mode = transition_to;
+        state.next_game_mode = None;
     }
 }
 
 ////////////////////////    PER GAME MODE STATE TRANSITIONS     ////////////////////////
 pub fn title_init_state(ecs: &mut World, state: &mut State) {
     ecs.clear();
-
-    state.game_mode = GameMode::Title;
-    state.next_game_mode = None;
 }
 
-const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 20.0, y: 8.0 };
-pub fn playing_init_state(ecs: &mut World, state: &mut State) {
+pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
+    state.prepare_level_state.mode = PrepareLevelMode::SpawnStuffIn;
+    state.prepare_level_state.countdown = 1 * 60;
+
     ecs.clear();
     state.physics = PhysicsEngine::new();
 
@@ -60,52 +71,23 @@ pub fn playing_init_state(ecs: &mut World, state: &mut State) {
         },
     );
 
-    // spawn a player physics body
-    // let player_collider =
-    //     ColliderBuilder::cuboid(BASE_PADDLE_SHAPE.x / 2.0, BASE_PADDLE_SHAPE.y / 2.0);
-    // let player_rigid_body = RigidBodyBuilder::dynamic()
-    //     .translation(Vector::new(player_pos.x, player_pos.y))
-    //     .rotation(player_rot.x)
-    //     .build();
-    // let player_body_handle = state.physics.rigid_body_set.insert(player_rigid_body);
-    // state.physics.collider_set.insert_with_parent(
-    //     player_collider,
-    //     player_body_handle,
-    //     &mut state.physics.rigid_body_set,
-    // );
-
-    // spawn ball
-
-    // spawn a few random balls
-    for _ in 0..20 {
-        let pos = Vec2::new(
-            rand::thread_rng().gen_range(0.0..DIMS.x as f32),
-            rand::thread_rng().gen_range(0.0..DIMS.y as f32),
-        );
-
-        const VEL_MAX: f32 = 200.0;
-        let vel = Vec2::new(
-            rand::thread_rng().gen_range(-VEL_MAX..VEL_MAX),
-            rand::thread_rng().gen_range(-VEL_MAX..VEL_MAX),
-        );
-
-        // let pos = DIMS.as_vec2() / 2.0;
-        // let vel = Vec2::new(0.0, m2p(-1.0));
-
-        spawn_ball(ecs, state, pos, vel, player)
-    }
-
-    // state.level = 1;
-    // spawn_level(ecs, state, state.level);
-
-    state.game_mode = GameMode::Playing;
-    state.next_game_mode = None;
+    spawn_level(ecs, state, state.level);
 }
+
+const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 20.0, y: 8.0 };
+pub fn playing_init_state(ecs: &mut World, state: &mut State) {
+    println!("playing init");
+}
+
+pub fn level_complete_init_state(ecs: &mut World, state: &mut State) {
+    state.level_complete_state.mode = LevelCompleteMode::Announce;
+    state.level_complete_state.countdown = 60;
+}
+
+pub fn win_game_init_state(ecs: &mut World, state: &mut State) {}
 
 pub fn game_over_init_state(ecs: &mut World, state: &mut State) {
     ecs.clear();
-    state.game_mode = GameMode::GameOver;
-    state.next_game_mode = None;
 }
 
 pub fn delete_all_blocks(ecs: &mut World, state: &mut State) {

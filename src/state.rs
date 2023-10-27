@@ -17,7 +17,10 @@ pub const FRAMES_PER_SECOND: u32 = 60;
 #[derive(Clone, Copy)]
 pub enum GameMode {
     Title,
+    PrepareLevel,
     Playing,
+    LevelComplete,
+    WinGame,
     GameOver,
 }
 
@@ -29,6 +32,10 @@ pub struct State {
 
     pub game_mode: GameMode,
     pub next_game_mode: Option<GameMode>,
+
+    pub prepare_level_state: Box<PrepareLevelState>,
+    pub level_complete_state: Box<LevelCompleteState>,
+    pub win_game_state: Box<WinGameState>,
 
     pub expiring_messages: ExpiringMessages,
 
@@ -55,6 +62,16 @@ impl State {
         let game_mode = GameMode::Title;
         let transition_to: Option<GameMode> = None;
 
+        let prepare_level_state = Box::new(PrepareLevelState {
+            mode: PrepareLevelMode::SpawnStuffIn,
+            countdown: 0,
+        });
+        let level_complete_state = Box::new(LevelCompleteState {
+            mode: LevelCompleteMode::Announce,
+            countdown: 0,
+        });
+        let win_game_state = Box::new(WinGameState {});
+
         let expiring_messages = ExpiringMessages::new();
 
         let render_command_buffer: RenderCommandBuffer = RenderCommandBuffer::new();
@@ -77,6 +94,10 @@ impl State {
             game_mode,
             next_game_mode: transition_to,
 
+            prepare_level_state,
+            level_complete_state,
+            win_game_state,
+
             expiring_messages,
 
             audio_command_buffer,
@@ -87,7 +108,7 @@ impl State {
             mouse_screen_pos,
 
             // collision_events: Vec::new(),
-            level: 0,
+            level: 1,
             level_change_delay: 0,
 
             physics,
@@ -101,3 +122,49 @@ pub enum DeletionEvent {
     Entity { entity: Entity },
     Physics { entity: Entity },
 }
+
+pub enum PrepareLevelMode {
+    SpawnStuffIn,
+    AnnounceLevel,
+    ShortPause,
+    SpawnBall,
+}
+
+impl ToString for PrepareLevelMode {
+    fn to_string(&self) -> String {
+        match self {
+            PrepareLevelMode::SpawnStuffIn => "SpawnStuffIn".to_string(),
+            PrepareLevelMode::AnnounceLevel => "AnnounceLevel".to_string(),
+            PrepareLevelMode::ShortPause => "ShortPause".to_string(),
+            PrepareLevelMode::SpawnBall => "SpawnBall".to_string(),
+        }
+    }
+}
+
+pub enum LevelCompleteMode {
+    Announce,
+    Announce2,
+    Pause,
+}
+
+impl ToString for LevelCompleteMode {
+    fn to_string(&self) -> String {
+        match self {
+            LevelCompleteMode::Announce => "Announce".to_string(),
+            LevelCompleteMode::Announce2 => "Announce2".to_string(),
+            LevelCompleteMode::Pause => "Pause".to_string(),
+        }
+    }
+}
+
+pub struct PrepareLevelState {
+    pub mode: PrepareLevelMode,
+    pub countdown: u32,
+}
+
+pub struct LevelCompleteState {
+    pub mode: LevelCompleteMode,
+    pub countdown: u32,
+}
+
+pub struct WinGameState {}

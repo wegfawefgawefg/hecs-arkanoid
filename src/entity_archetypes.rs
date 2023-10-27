@@ -193,7 +193,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         .linear_damping(0.0)
         .angular_damping(0.0)
         .can_sleep(false)
-        // .ccd_enabled(true)
+        .ccd_enabled(true)
         .build();
     let ball_body_handle = state.physics.rigid_body_set.insert(ball_rigid_body);
     state.physics.collider_set.insert_with_parent(
@@ -247,27 +247,6 @@ pub fn spawn_block(
         .physics
         .set_rigid_body_mapping(block_entity, block_body_handle);
 }
-
-/*
-    let player_pos = Vec2::new(100.0, DIMS.y as f32 * 0.9);
-    let player_rot = Vec2::new(0.0, 0.0);
-    let player = ecs.spawn((
-        CTransform {
-            pos: player_pos,
-            rot: player_rot,
-        },
-        Physics {
-            vel: Vec2::ZERO,
-            rot_vel: 0.0,
-        },
-        InputControlled,
-        Player,
-        Paddle { size: 1 },
-        Shape {
-            dims: BASE_PADDLE_SHAPE,
-        },
-    ));
-*/
 
 pub fn spawn_paddle(
     ecs: &mut World,
