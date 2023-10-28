@@ -26,6 +26,7 @@ mod window_helpers;
 const DIMS: UVec2 = UVec2::new(240, 160);
 
 const TIMESTEP: f32 = 1.0 / state::FRAMES_PER_SECOND as f32;
+const TS_RATIO: f32 = state::FRAMES_PER_SECOND as f32 / 60.0;
 fn main() {
     let (mut rl, rlt) = raylib::init().title("raylib-rs-lowres-template").build();
     unsafe {
@@ -82,7 +83,9 @@ fn main() {
     let mut ecs = World::new();
 
     ////////////////    MAIN LOOP    ////////////////
+    let mut fps_history = std::collections::VecDeque::with_capacity(10);
     while state.running && !rl.window_should_close() {
+        let time_a = std::time::Instant::now();
         game_mode_transitions::transition_game_mode(&mut ecs, &mut state);
         input_processing::process_input(&mut rl, &mut state);
 
@@ -99,9 +102,9 @@ fn main() {
             execute_audio_command_buffer(&mut rl, &mut audio, &mut state.audio_command_buffer);
         }
 
-        // audio // UNMUTE THIS TO HEAR THE MUSIC
-        //     .rl_audio_device
-        //     .update_music_stream(&mut audio.songs[Song::Playing as usize]);
+        audio // UNMUTE THIS TO HEAR THE MUSIC
+            .rl_audio_device
+            .update_music_stream(&mut audio.songs[Song::Playing as usize]);
 
         ////////////////    DRAWING  ////////////////
         let mut draw_handle = rl.begin_drawing(&rlt);
@@ -114,6 +117,7 @@ fn main() {
         }
         scale_and_blit_render_texture_to_window(
             &rlt,
+            &mut state,
             &mut draw_handle,
             &mut render_texture,
             &mut large_render_texture,
@@ -121,5 +125,11 @@ fn main() {
             window_dims,
             &shaders,
         );
+
+        let time_b = std::time::Instant::now();
+        let frame_duration = (time_b - time_a).as_secs_f32();
+        let fps = 1.0 / frame_duration;
+        fps_history.push_back(fps);
+        state.fps = fps_history.iter().sum::<f32>() / fps_history.len() as f32;
     }
 }

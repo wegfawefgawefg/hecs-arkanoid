@@ -1,11 +1,10 @@
 use glam::Vec2;
 use hecs::World;
-use rand::{rngs::StdRng, Rng};
 use rapier2d::prelude::*;
 use raylib::prelude::Color;
 
 use crate::{
-    components::{Ball, Block, CTransform, Health, Paddle, Physics, Player, Shape, Wall},
+    components::{Ball, Block, CTransform, Health, Paddle, Physics, Shape, Wall},
     physics_engine::m2p,
     render_commands::RenderCommand,
     state::State,
@@ -65,7 +64,7 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render the level in the top right
-    let mut cursor = Vec2::new(DIMS.x as f32 - 50.0, DIMS.y as f32 - 20.0);
+    let cursor = Vec2::new(DIMS.x as f32 - 50.0, DIMS.y as f32 - 20.0);
     let size = 1;
     state.render_command_buffer.push(RenderCommand::Text {
         pos: cursor,
@@ -82,23 +81,19 @@ pub fn render_physics(state: &mut State) {
         let shape = collider.shape();
         let shape_type = shape.shape_type();
 
-        match shape_type {
-            ShapeType::Cuboid => {
-                let cuboid = shape.as_cuboid().unwrap();
-                let tl = center + -cuboid.half_extents;
-                let size = cuboid.half_extents * 2.0;
+        if let ShapeType::Cuboid = shape_type {
+            let cuboid = shape.as_cuboid().unwrap();
+            let tl = center + -cuboid.half_extents;
+            let size = cuboid.half_extents * 2.0;
 
-                let ppos = Vec2::new(m2p(tl.x), m2p(tl.y));
-                let psize = Vec2::new(m2p(size.x), m2p(size.y));
-                state.render_command_buffer.push(RenderCommand::Block {
-                    pos: ppos,
-                    dims: psize,
-                    color: Color::RED, // or any color you prefer for debug
-                    hp: 1,
-                });
-            }
-            // Add more shape types here if needed
-            _ => {}
+            let ppos = Vec2::new(m2p(tl.x), m2p(tl.y));
+            let psize = Vec2::new(m2p(size.x), m2p(size.y));
+            state.render_command_buffer.push(RenderCommand::Block {
+                pos: ppos,
+                dims: psize,
+                color: Color::RED, // or any color you prefer for debug
+                hp: 1,
+            });
         }
     }
 
@@ -116,47 +111,3 @@ pub fn render_physics(state: &mut State) {
         });
     }
 }
-
-// // render system
-// /* fetch position and sprite entities, and just blit them with a fixed size with the given position */
-// #[system]
-// #[read_component(Score)]
-// pub fn score_render(ecs: &SubWorld, #[resource] render_command_buffer: &mut RenderCommandBuffer) {
-//     let mut cursor = Vec2::new(DIMS.x as f32 * 0.28, DIMS.y as f32 * 0.1);
-//     let size = 1;
-
-//     // schedule asteroid rendering
-//     <&Score>::query().iter(ecs).for_each(|score| {
-//         let text = format!("Score: {}", score.score);
-
-//         render_command_buffer.push(DrawCommand::Text {
-//             pos: cursor,
-//             text,
-//             size,
-//             color: Color::WHITE,
-//         });
-
-//         cursor.y += 10.0;
-//     });
-// }
-
-// #[system]
-// pub fn render_expiring_messages(
-//     #[resource] expiring_messages: &ExpiringMessages,
-//     #[resource] render_command_buffer: &mut RenderCommandBuffer,
-// ) {
-//     // cursor should go up from the bottom left corner
-//     let mut cursor = Vec2::new(0.0, DIMS.y as f32 * 0.9);
-//     let size = 5;
-
-//     for message in expiring_messages.iter() {
-//         render_command_buffer.push(DrawCommand::Text {
-//             pos: cursor,
-//             text: message.text.clone(),
-//             size,
-//             color: Color::WHITE,
-//         });
-
-//         cursor.y -= size as f32 * 1.5;
-//     }
-// }

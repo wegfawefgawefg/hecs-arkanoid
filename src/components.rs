@@ -80,3 +80,6 @@ pub struct Wall {
 
 pub struct HasRigidBody;
 pub struct HasSensor;
+
+pub struct VelocityManaged;
+pub struct PositionManaged;

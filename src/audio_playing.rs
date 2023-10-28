@@ -3,10 +3,7 @@ use std::collections::HashSet;
 use rand::Rng;
 use raylib::prelude::*;
 
-use crate::{
-    audio::{Audio, SoundEffect},
-    state::State,
-};
+use crate::audio::{Audio, SoundEffect};
 
 pub type AudioCommandBuffer = Vec<AudioCommand>;
 
@@ -22,7 +19,7 @@ pub enum AudioCommand {
 }
 
 pub fn execute_audio_command_buffer(
-    rl: &mut RaylibHandle,
+    _rl: &mut RaylibHandle,
     audio: &mut Audio,
     audio_command_buffer: &mut AudioCommandBuffer,
 ) {

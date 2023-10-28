@@ -13,7 +13,7 @@ use crate::{
     level_data,
     physics_engine::{m2p, p2m, PhysicsEngine},
     state::{GameMode, LevelCompleteMode, PrepareLevelMode, State},
-    DIMS,
+    systems, DIMS, TS_RATIO,
 };
 
 pub fn transition_game_mode(ecs: &mut World, state: &mut State) {
@@ -49,7 +49,7 @@ pub fn title_init_state(ecs: &mut World, state: &mut State) {
 
 pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
     state.prepare_level_state.mode = PrepareLevelMode::SpawnStuffIn;
-    state.prepare_level_state.countdown = 1 * 60;
+    state.prepare_level_state.countdown = (20.0 * TS_RATIO) as u32;
 
     ecs.clear();
     state.physics = PhysicsEngine::new();
@@ -57,7 +57,7 @@ pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
     spawn_walls(ecs, state);
 
     // add players paddle
-    let player_pos = Vec2::new(100.0, DIMS.y as f32 * 0.9);
+    let player_pos = Vec2::new(DIMS.x as f32 / 2.0, DIMS.y as f32 * 0.9);
     let player = spawn_paddle(
         ecs,
         state,
@@ -72,16 +72,18 @@ pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
     );
 
     spawn_level(ecs, state, state.level);
+    systems::playing::physics::sync_ecs_to_physics(ecs, state);
+    systems::playing::physics::step_physics(ecs, state);
 }
 
-const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 20.0, y: 8.0 };
+const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 30.0, y: 8.0 };
 pub fn playing_init_state(ecs: &mut World, state: &mut State) {
     println!("playing init");
 }
 
 pub fn level_complete_init_state(ecs: &mut World, state: &mut State) {
     state.level_complete_state.mode = LevelCompleteMode::Announce;
-    state.level_complete_state.countdown = 60;
+    state.level_complete_state.countdown = (60.0 * TS_RATIO) as u32;
 }
 
 pub fn win_game_init_state(ecs: &mut World, state: &mut State) {}

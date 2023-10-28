@@ -7,7 +7,7 @@ use raylib::prelude::Color;
 use crate::{
     components::{
         Ball, Block, Bouncy, CTransform, HasRigidBody, Health, InputControlled, OwnedBy, Paddle,
-        Physics, Player, Shape, Wall,
+        Physics, Player, PositionManaged, Shape, VelocityManaged, Wall,
     },
     physics_engine::p2m,
     state::State,
@@ -178,6 +178,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         },
         Bouncy,
         HasRigidBody,
+        VelocityManaged,
     ));
     // let ball_collider = ColliderBuilder::ball(p2m(8.0) / 2.0)
     let ball_collider = ColliderBuilder::cuboid(p2m(4.0) / 2.0, p2m(4.0) / 2.0)
@@ -269,12 +270,13 @@ pub fn spawn_paddle(
         Paddle { size: 1 },
         Shape { dims: shape },
         HasRigidBody,
+        PositionManaged,
     ));
 
     let paddle_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
         .restitution(1.0)
         .build();
-    let paddle_rigid_body = RigidBodyBuilder::kinematic_velocity_based()
+    let paddle_rigid_body = RigidBodyBuilder::kinematic_position_based()
         .translation(vector![
             p2m(pos.x + shape.x / 2.0),
             p2m(pos.y + shape.y / 2.0)

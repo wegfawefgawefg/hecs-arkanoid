@@ -26,3 +26,10 @@ win game
 game over
     if press -> go to start screen
 
+
+
+60
+1
+
+120
+0.5

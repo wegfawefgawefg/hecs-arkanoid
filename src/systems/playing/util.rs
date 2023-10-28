@@ -39,7 +39,8 @@ pub fn get_padded_position_outside_play_area(rng: &mut StdRng, padded_size: f32)
     // position needs to be outside of the screen
     // there are 8 zones, first pick a zone
     let zone = rng.gen_range(0..8);
-    let position = match zone {
+    // generate a position based on the zone, and return it
+    match zone {
         0 => Vec2::new(
             // top left
             rng.gen_range(-padded_size * 2.0..-padded_size),
@@ -81,8 +82,7 @@ pub fn get_padded_position_outside_play_area(rng: &mut StdRng, padded_size: f32)
             rng.gen_range(0.0..DIMS.y as f32),
         ),
         _ => panic!("Unexpected zone"), // This shouldn't happen with rng.gen_range(0..8)
-    };
-    position
+    }
 }
 
 pub fn is_in_play_area(pos: Vec2) -> bool {

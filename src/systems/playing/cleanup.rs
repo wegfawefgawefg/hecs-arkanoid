@@ -1,13 +1,6 @@
 use hecs::World;
 
-use crate::{
-    components::{CTransform, Paddle, Physics},
-    game_mode_transitions::spawn_level,
-    physics_engine::p2m,
-    state::{DeletionEvent, State, LEVEL_CHANGE_DELAY_DEFAULT},
-};
-
-const PLAYER_BASE_MOVE_SPEED: f32 = 200.0;
+use crate::state::{DeletionEvent, State};
 
 pub fn process_deletion_events(ecs: &mut World, state: &mut State) {
     for deletion_event in state.deletion_events.iter() {

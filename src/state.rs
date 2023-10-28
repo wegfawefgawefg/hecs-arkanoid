@@ -12,7 +12,7 @@ use crate::{
     render_commands::RenderCommandBuffer,
 };
 
-pub const FRAMES_PER_SECOND: u32 = 60;
+pub const FRAMES_PER_SECOND: u32 = 120;
 
 #[derive(Clone, Copy)]
 pub enum GameMode {
@@ -26,6 +26,7 @@ pub enum GameMode {
 
 pub const LEVEL_CHANGE_DELAY_DEFAULT: u32 = 10;
 pub struct State {
+    pub fps: f32,
     pub running: bool,
     pub time_since_last_update: f32,
     pub rng: StdRng,
@@ -86,6 +87,7 @@ impl State {
         let deletion_events: Vec<DeletionEvent> = Vec::new();
 
         Self {
+            fps: 0.0,
             running: true,
             time_since_last_update: 0.0,
 

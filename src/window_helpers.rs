@@ -1,5 +1,7 @@
-use glam::UVec2;
+use glam::{UVec2, Vec2};
 use raylib::prelude::*;
+
+use crate::state::State;
 
 pub fn center_window(rl: &mut raylib::RaylibHandle, window_dims: UVec2) {
     let screen_dims = UVec2::new(rl.get_screen_width() as u32, rl.get_screen_height() as u32);
@@ -26,6 +28,7 @@ pub fn center_window(rl: &mut raylib::RaylibHandle, window_dims: UVec2) {
 
 pub fn scale_and_blit_render_texture_to_window(
     rlt: &RaylibThread,
+    state: &mut State,
     draw_handle: &mut RaylibDrawHandle,
     render_texture: &mut RenderTexture2D,
     large_render_texture: &mut RenderTexture2D,
@@ -62,6 +65,17 @@ pub fn scale_and_blit_render_texture_to_window(
             0.0,
             Color::WHITE,
         );
+
+        // draw fps in the top left
+        // let mut cursor = Vec2::new(10.0, 10.0);
+        // let size = 30;
+        // high_res_draw_handle.draw_text(
+        //     format!("FPS: {}", state.fps).as_str(),
+        //     cursor.x as i32,
+        //     cursor.y as i32,
+        //     size,
+        //     Color::WHITE,
+        // );
     }
 
     // now draw the large render texture to the screen

@@ -1,48 +1,71 @@
-use std::char::MAX;
-use std::time::Duration;
-
 use glam::Vec2;
-use hecs::{Entity, World};
-use nalgebra::{Vector, Vector2};
-use rapier2d::prelude::{Real, RigidBody, RigidBodyHandle};
-use raylib::ffi::remove;
+use hecs::World;
+use nalgebra::Vector2;
+use rapier2d::prelude::RigidBodyHandle;
 
-use crate::audio_playing::{AudioCommand, AudioCommandBuffer};
+use crate::audio_playing::AudioCommand;
 use crate::components::{
-    Ball, Block, Bouncy, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle, Physics,
-    Shape,
+    Ball, Block, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle, Physics,
+    PositionManaged, Shape, VelocityManaged,
 };
 use crate::physics_engine::{m2p, p2m};
 use crate::state::{DeletionEvent, State};
-use crate::DIMS;
+use crate::{DIMS, TS_RATIO};
 
-const MAX_VEL: f32 = 200.0;
-
-// pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
-//     // every ball object that has a rigid body needs to copy its vel over to the physics
-//     for (entity, physics) in ecs.query::<&mut Physics>().with::<&HasRigidBody>().iter() {
-//         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-//             if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
-//                 // copy from physics to rigid body
-//                 physics.vel = physics.vel.normalize() * MAX_VEL;
-//                 let vel = Vector2::new(p2m(physics.vel.x), p2m(physics.vel.y));
-//                 rigid_body.set_linvel(vel, true);
-//             }
-//         }
-//     }
-// }
 pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
-    for (entity, physics) in ecs.query::<&mut Physics>().with::<&HasRigidBody>().iter() {
+    // for (entity, (ctransform, physics)) in ecs
+    //     .query::<(&mut CTransform, &mut Physics)>()
+    //     .with::<&HasRigidBody>()
+    //     .iter()
+    // {
+    //     if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+    //         if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
+    //             // Update the physics engine
+    //             // let pos = Vector2::new(p2m(ctransform.pos.x), p2m(ctransform.pos.y));
+    //             // rigid_body.set_position(pos.into(), true);
+
+    //             let vel = Vector2::new(p2m(physics.vel.x), p2m(physics.vel.y));
+    //             rigid_body.set_linvel(vel, true);
+    //         }
+    //     }
+    // }
+
+    // velocity managed
+    for (entity, physics) in ecs
+        .query::<&mut Physics>()
+        .with::<(&HasRigidBody, &VelocityManaged)>()
+        .iter()
+    {
         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
             if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
                 // Update the physics engine
+                // let pos = Vector2::new(p2m(ctransform.pos.x), p2m(ctransform.pos.y));
+                // rigid_body.set_position(pos.into(), true);
+
                 let vel = Vector2::new(p2m(physics.vel.x), p2m(physics.vel.y));
                 rigid_body.set_linvel(vel, true);
             }
         }
     }
+
+    // position managed
+    for (entity, (ctransform, shape)) in ecs
+        .query::<(&mut CTransform, &Shape)>()
+        .with::<(&HasRigidBody, &PositionManaged)>()
+        .iter()
+    {
+        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+            if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
+                // Update the physics engine
+                let center = ctransform.pos + shape.dims / 2.0;
+                let pos = Vector2::new(p2m(center.x), p2m(center.y));
+                rigid_body.set_position(pos.into(), true);
+            }
+        }
+    }
 }
 const ANGLE_45_IN_RAD: f32 = std::f32::consts::PI / 3.0;
+const BALL_VEL: f32 = 300.0 * (1.0 / TS_RATIO);
 pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
     for (entity, physics) in ecs
         .query::<&mut Physics>()
@@ -53,45 +76,11 @@ pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
             let x_sign = physics.vel.x.signum();
             let y_sign = physics.vel.y.signum();
 
-            physics.vel.x = ANGLE_45_IN_RAD.cos() * MAX_VEL * x_sign;
-            physics.vel.y = ANGLE_45_IN_RAD.sin() * MAX_VEL * y_sign;
+            physics.vel.x = ANGLE_45_IN_RAD.cos() * BALL_VEL * x_sign;
+            physics.vel.y = ANGLE_45_IN_RAD.sin() * BALL_VEL * y_sign;
         }
     }
 }
-
-const ANGLES: [f32; 2] = [30.0, 60.0];
-// Angles to snap to
-// pub fn set_ball_to_angles(ecs: &World, state: &mut State) {
-//     for (entity, physics) in ecs
-//         .query::<&mut Physics>()
-//         .with::<(&HasRigidBody, &Ball)>()
-//         .iter()
-//     {
-//         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-//             // Compute current angle in degrees
-//             let angle_current = physics.vel.y.atan2(physics.vel.x) * (180.0 / std::f32::consts::PI);
-
-//             // Find closest snap angle
-//             let closest_angle = ANGLES
-//                 .iter()
-//                 .copied()
-//                 .min_by(|a, b| {
-//                     (a - angle_current.abs())
-//                         .abs()
-//                         .partial_cmp(&(b - angle_current.abs()).abs())
-//                         .unwrap()
-//                 })
-//                 .unwrap_or(angle_current.abs());
-
-//             // Convert closest_angle back to radians
-//             let closest_angle_rad = closest_angle.to_radians();
-
-//             // Set new velocity based on closest angle and MAX_VEL
-//             physics.vel.x = closest_angle_rad.cos() * MAX_VEL * physics.vel.x.signum();
-//             physics.vel.y = closest_angle_rad.sin() * MAX_VEL * physics.vel.y.signum();
-//         }
-//     }
-// }
 
 /// Collision events are emptied here so dont check collisions in step before this is called
 pub fn step_physics(ecs: &World, state: &mut State) {
@@ -105,6 +94,7 @@ pub fn step_physics(ecs: &World, state: &mut State) {
     for (entity, (ctransform, shape)) in ecs
         .query::<(&mut CTransform, &Shape)>()
         .with::<&HasRigidBody>()
+        .without::<&PositionManaged>()
         .iter()
     {
         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
@@ -127,6 +117,21 @@ pub fn step_physics(ecs: &World, state: &mut State) {
             if let Some(rigid_body) = state.physics.rigid_body_set.get(body) {
                 let vel = *rigid_body.linvel();
                 physics.vel = Vec2::new(m2p(vel.x), m2p(vel.y));
+            }
+        }
+    }
+
+    // paddle specifically
+    for (entity, (ctransform, shape)) in ecs
+        .query::<(&mut CTransform, &Shape)>()
+        .with::<&Paddle>()
+        .iter()
+    {
+        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+            if let Some(rigid_body) = state.physics.rigid_body_set.get(body) {
+                let center = rigid_body.position().translation.vector;
+                ctransform.pos.x = m2p(center.x) - shape.dims.x / 2.0;
+                ctransform.pos.y = m2p(center.y) - shape.dims.y / 2.0;
             }
         }
     }
@@ -239,7 +244,7 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
             // // let mut remove_a = false;
             if b_is_ball {
                 println!("b is a ball");
-                if let Ok((block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_a) {
+                if let Ok((_, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_a) {
                     println!("a is a block");
                     match health.hp {
                         0 => {}
@@ -279,34 +284,7 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
     }
 }
 
-// Remove blocks with 0 or less HP
-// let mut to_remove = Vec::new();
-// for (entity, health) in ecs.query::<&Health>().with::<&Block>().iter() {
-//     if health.value <= 0 {
-//         to_remove.push(entity);
-//     }
-// }
-
-// Remove physics and ECS entities
-// for entity in to_remove {
-//     // Remove physics bodies and bindings
-//     if let Some(handle) = state.physics.get_rigid_body_handle(entity) {
-//         state.physics.rigid_body_set.remove(handle);
-//     }
-
-//     // Remove from ECS
-//     ecs.despawn(entity);
-// }
-
-pub fn bounce(ecs: &World, state: &mut State) {
-    let mut bounce_surfaces: Vec<(Entity, CTransform, Shape)> = ecs
-        .query::<(&mut CTransform, &Shape)>()
-        .iter()
-        .map(|(entity, (ctransform, shape))| (entity, *ctransform, *shape))
-        .collect();
-}
-
-pub fn boundary_checking(ecs: &World, state: &mut State) {
+pub fn boundary_checking(ecs: &World, _state: &mut State) {
     for (_, (ctransform, shape)) in ecs
         .query::<(&mut CTransform, &Shape)>()
         .without::<&FreeToLeavePlayField>()
@@ -327,38 +305,3 @@ pub fn boundary_checking(ecs: &World, state: &mut State) {
         }
     }
 }
-
-// pub fn physics(ecs: &mut World, state: &mut State) {
-// let query = <&mut Physics>::query();
-// for physics in query.filter(!component::<velUncapped>()).iter_mut(ecs) {
-//     if physics.vel.length() > MAX_VEL {
-//         physics.vel = physics.vel.normalize() * MAX_VEL;
-//     }
-// }
-// let mut step_query = <(&mut CTransform, &mut Physics)>::query();
-// for (ctransform, physics) in step_query.iter_mut(ecs) {
-//     if physics.vel.length() > MAX_VEL {
-//         physics.vel = physics.vel.normalize() * MAX_VEL;
-//     }
-//     ctransform.pos += physics.vel;
-
-//     let rot_matrix = glam::Mat2::from_angle(physics.rot_vel.to_radians() * 0.1);
-//     ctransform.rot = (rot_matrix * ctransform.rot).normalize();
-// }
-// }
-
-// #[system]
-// #[write_component(CTransform)]
-// #[write_component(Physics)]
-// pub fn capture_in_play_field(ecs: &mut SubWorld, cmd: &mut CommandBuffer) {
-//     let mut query = <(Entity, &mut CTransform)>::query().filter(component::<CaptureInPlayField>());
-//     for (entity, ctransform) in query.iter_mut(ecs) {
-//         let is_in_play_field = ctransform.pos.x > 0.0
-//             && ctransform.pos.x < DIMS.x as f32
-//             && ctransform.pos.y > 0.0
-//             && (ctransform.pos.y < DIMS.y as f32);
-//         if is_in_play_field {
-//             cmd.remove_component::<CaptureInPlayField>(*entity);
-//         }
-//     }
-// }
