@@ -6,7 +6,7 @@ use crate::{
     audio_playing::AudioCommand,
     components::{Paddle, Player},
     entity_archetypes::spawn_ball,
-    state::{GameMode, LevelCompleteMode, PrepareLevelMode, State},
+    state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     systems::{self},
     DIMS, TS_RATIO,
 };
@@ -14,30 +14,30 @@ use crate::{
 pub fn step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
     match state.game_mode {
         GameMode::Title => {
-            title_step(rl, ecs, state);
+            title_step(state, ecs);
         }
         GameMode::PrepareLevel => {
-            prepare_level_step(rl, ecs, state);
+            prepare_level_step(state, ecs);
         }
         GameMode::Playing => {
-            playing_step(rl, ecs, state);
+            playing_step(state, ecs);
         }
         GameMode::LevelComplete => {
-            level_complete_step(rl, ecs, state);
+            level_complete_step(state, ecs);
         }
         GameMode::WinGame => {
-            win_game_step(rl, ecs, state);
+            win_game_step(state, ecs);
         }
         GameMode::GameOver => {
-            game_over_step(rl, ecs, state);
+            game_over_step(state, ecs);
         }
     }
 }
 
 ////////////////////////    PER GAME MODE STEPPING     ////////////////////////
-pub fn title_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {}
+pub fn title_step(state: &mut State, ecs: &mut World) {}
 
-pub fn prepare_level_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
+pub fn prepare_level_step(state: &mut State, ecs: &mut World) {
     if state.prepare_level_state.countdown > 0 {
         state.prepare_level_state.countdown -= 1;
     }
@@ -86,7 +86,7 @@ pub fn prepare_level_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut St
     }
 }
 
-pub fn playing_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
+pub fn playing_step(state: &mut State, ecs: &mut World) {
     if state.level_change_delay > 0 {
         state.level_change_delay -= 1;
     }
@@ -95,14 +95,15 @@ pub fn playing_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
     // systems::playing::physics::boundary_checking(ecs, state);
     systems::playing::physics::sync_ecs_to_physics(ecs, state);
     systems::playing::physics::step_physics(ecs, state);
-    systems::playing::physics::damage_blocks(ecs, state);
-    systems::playing::rendering::render(ecs, state);
+    systems::playing::physics::respond_to_collisions(ecs, state);
     systems::playing::physics::set_ball_to_angle(ecs, state);
     systems::playing::cleanup::process_deletion_events(ecs, state);
     systems::playing::state_changing::check_for_level_complete(ecs, state);
+    systems::playing::state_changing::check_for_level_lost(ecs, state);
+    systems::playing::rendering::render(ecs, state);
 }
 
-pub fn level_complete_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
+pub fn level_complete_step(state: &mut State, ecs: &mut World) {
     if state.level_complete_state.countdown > 0 {
         state.level_complete_state.countdown -= 1;
     }
@@ -124,17 +125,65 @@ pub fn level_complete_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut S
         }
         LevelCompleteMode::Pause => {
             if state.prepare_level_state.countdown == 0 {
-                if state.level == 35 {
-                    state.next_game_mode = Some(GameMode::WinGame);
-                } else {
-                    state.level += 1;
-                    state.next_game_mode = Some(GameMode::PrepareLevel);
-                }
+                state.level += 1;
+                state.next_game_mode = Some(GameMode::PrepareLevel);
             }
         }
     }
 }
 
-pub fn win_game_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {}
+pub fn win_game_step(state: &mut State, ecs: &mut World) {
+    if state.win_game_state.countdown > 0 {
+        state.win_game_state.countdown -= 1;
+    }
 
-pub fn game_over_step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {}
+    systems::playing::rendering::render(ecs, state);
+
+    match state.win_game_state.mode {
+        WinGameMode::Announce => {
+            if state.win_game_state.countdown == 0 {
+                state.win_game_state.mode = WinGameMode::Announce2;
+                state.win_game_state.countdown = (40.0 * TS_RATIO) as u32;
+            }
+        }
+        WinGameMode::Announce2 => {
+            if state.win_game_state.countdown == 0 {
+                state.win_game_state.mode = WinGameMode::Pause;
+                state.win_game_state.countdown = (40.0 * TS_RATIO) as u32;
+            }
+        }
+        WinGameMode::Pause => {
+            if state.prepare_level_state.countdown == 0 {
+                state.next_game_mode = Some(GameMode::Title);
+            }
+        }
+    }
+}
+
+pub fn game_over_step(state: &mut State, ecs: &mut World) {
+    if state.game_over_state.countdown > 0 {
+        state.game_over_state.countdown -= 1;
+    }
+
+    systems::playing::rendering::render(ecs, state);
+
+    match state.game_over_state.mode {
+        GameOverMode::Announce => {
+            if state.game_over_state.countdown == 0 {
+                state.game_over_state.mode = GameOverMode::Announce2;
+                state.game_over_state.countdown = (40.0 * TS_RATIO) as u32;
+            }
+        }
+        GameOverMode::Announce2 => {
+            if state.game_over_state.countdown == 0 {
+                state.game_over_state.mode = GameOverMode::Pause;
+                state.game_over_state.countdown = (40.0 * TS_RATIO) as u32;
+            }
+        }
+        GameOverMode::Pause => {
+            if state.prepare_level_state.countdown == 0 {
+                state.next_game_mode = Some(GameMode::Title);
+            }
+        }
+    }
+}

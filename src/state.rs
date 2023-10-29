@@ -37,6 +37,7 @@ pub struct State {
     pub prepare_level_state: Box<PrepareLevelState>,
     pub level_complete_state: Box<LevelCompleteState>,
     pub win_game_state: Box<WinGameState>,
+    pub game_over_state: Box<GameOverState>,
 
     pub expiring_messages: ExpiringMessages,
 
@@ -71,7 +72,14 @@ impl State {
             mode: LevelCompleteMode::Announce,
             countdown: 0,
         });
-        let win_game_state = Box::new(WinGameState {});
+        let win_game_state = Box::new(WinGameState {
+            mode: WinGameMode::Announce,
+            countdown: 0,
+        });
+        let game_over_state = Box::new(GameOverState {
+            mode: GameOverMode::Announce,
+            countdown: 0,
+        });
 
         let expiring_messages = ExpiringMessages::new();
 
@@ -99,6 +107,7 @@ impl State {
             prepare_level_state,
             level_complete_state,
             win_game_state,
+            game_over_state,
 
             expiring_messages,
 
@@ -169,4 +178,33 @@ pub struct LevelCompleteState {
     pub countdown: u32,
 }
 
-pub struct WinGameState {}
+pub enum WinGameMode {
+    Announce,
+    Announce2,
+    Pause,
+}
+pub struct WinGameState {
+    pub mode: WinGameMode,
+    pub countdown: u32,
+}
+
+pub enum GameOverMode {
+    Announce,
+    Announce2,
+    Pause,
+}
+
+impl ToString for GameOverMode {
+    fn to_string(&self) -> String {
+        match self {
+            GameOverMode::Announce => "Announce".to_string(),
+            GameOverMode::Announce2 => "Announce2".to_string(),
+            GameOverMode::Pause => "Pause".to_string(),
+        }
+    }
+}
+
+pub struct GameOverState {
+    pub mode: GameOverMode,
+    pub countdown: u32,
+}

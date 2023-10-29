@@ -27,8 +27,11 @@ pub enum SoundEffect {
     BallHitPaddle,
     BallWallBounce,
 
+    BallDrop,
+
     LevelStart,
     LevelWin,
+    LevelLost,
 }
 
 pub struct Audio {
@@ -107,5 +110,7 @@ pub fn get_sound_file_name(sound_effect: SoundEffect) -> &'static str {
 
         SoundEffect::LevelStart => "level_start",
         SoundEffect::LevelWin => "level_win",
+        SoundEffect::BallDrop => "ball_drop",
+        SoundEffect::LevelLost => "level_loss",
     }
 }

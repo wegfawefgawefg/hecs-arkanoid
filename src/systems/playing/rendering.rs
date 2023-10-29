@@ -4,7 +4,7 @@ use rapier2d::prelude::*;
 use raylib::prelude::Color;
 
 use crate::{
-    components::{Ball, Block, CTransform, Health, Paddle, Physics, Shape, Wall},
+    components::{Ball, BallEater, Block, CTransform, Health, Paddle, Physics, Shape, Wall},
     physics_engine::m2p,
     render_commands::RenderCommand,
     state::State,
@@ -26,12 +26,22 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render walls
-    for (_, (ctransform, shape, wall)) in ecs.query::<(&CTransform, &Shape, &Wall)>().iter() {
-        state.render_command_buffer.push(RenderCommand::Line {
-            start: ctransform.pos,
-            end: ctransform.pos + shape.dims,
-            color: wall.color,
-        });
+    for (entity, (ctransform, shape)) in ecs.query::<(&CTransform, &Shape)>().with::<&Wall>().iter()
+    {
+        // white if not a ball eater, red if it is
+        let mut color: Color = Color::WHITE;
+        if let Ok(mut r) = ecs.query_one::<&BallEater>(entity) {
+            if let Some(_) = r.get() {
+                color = Color::RED;
+            }
+        }
+        state
+            .render_command_buffer
+            .push(RenderCommand::SolidRectangle {
+                pos: ctransform.pos,
+                dims: shape.dims,
+                color,
+            });
     }
 
     // render every player as a paddle

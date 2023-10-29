@@ -74,9 +74,8 @@ pub struct LookAt {
 #[derive(Clone, Copy)]
 pub struct Enemy;
 
-pub struct Wall {
-    pub color: Color,
-}
+pub struct Wall;
+pub struct BallEater;
 
 pub struct HasRigidBody;
 pub struct HasSensor;

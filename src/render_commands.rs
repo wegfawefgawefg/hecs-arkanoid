@@ -40,6 +40,11 @@ pub enum RenderCommand {
         radius: f32,
         color: Color,
     },
+    SolidRectangle {
+        pos: Vec2,
+        dims: Vec2,
+        color: Color,
+    },
 }
 
 // defualt entity size
@@ -110,6 +115,15 @@ pub fn execute_render_command_buffer(
             }
             RenderCommand::Circle { pos, radius, color } => {
                 d.draw_circle(pos.x as i32, pos.y as i32, *radius, *color);
+            }
+            RenderCommand::SolidRectangle { pos, dims, color } => {
+                d.draw_rectangle(
+                    pos.x as i32,
+                    pos.y as i32,
+                    dims.x as i32,
+                    dims.y as i32,
+                    *color,
+                );
             }
         }
     }

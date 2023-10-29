@@ -3,7 +3,7 @@ use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode};
 
 use crate::{
     render_commands::execute_render_command_buffer,
-    state::{GameMode, LevelCompleteMode, PrepareLevelMode, State},
+    state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     DIMS,
 };
 
@@ -170,34 +170,58 @@ pub fn level_complete_render(state: &State, d: &mut RaylibTextureMode<RaylibDraw
     }
 }
 
-pub fn win_game_render(_state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
-    let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
-    let title = "tallying scores \nand stuff";
-    let size = 20;
-    d.draw_text(
-        title,
-        cursor.x as i32,
-        cursor.y as i32,
-        size,
-        Color::RAYWHITE,
-    );
-    cursor.y += size as f32 * 1.5;
+pub fn win_game_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+    if let WinGameMode::Announce = state.win_game_state.mode {
+        let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
+        let title = "you did it";
+        let size = 20;
+        d.draw_text(
+            title,
+            cursor.x as i32,
+            cursor.y as i32,
+            size,
+            Color::RAYWHITE,
+        );
+        cursor.y += size as f32 * 1.5;
+    } else if let WinGameMode::Announce2 = state.win_game_state.mode {
+        let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
+        let title = "see you soon";
+        let size = 20;
+        d.draw_text(
+            title,
+            cursor.x as i32,
+            cursor.y as i32,
+            size,
+            Color::RAYWHITE,
+        );
+        cursor.y += size as f32 * 1.5;
+    }
 }
 
 pub fn game_over_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
-    let mut cursor = Vec2::new(DIMS.x as f32 * 0.28, DIMS.y as f32 * 0.4);
-    let title = "GAME OVER!";
-    let size = 20;
-    d.draw_text(title, cursor.x as i32, cursor.y as i32, size, Color::WHITE);
-    cursor.y += size as f32 * 1.5;
-
-    let subtitle = "press space";
-    let size = 1;
-    d.draw_text(
-        subtitle,
-        cursor.x as i32,
-        cursor.y as i32,
-        size,
-        Color::WHITE,
-    );
+    if let GameOverMode::Announce = state.game_over_state.mode {
+        let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
+        let title = "too bad";
+        let size = 20;
+        d.draw_text(
+            title,
+            cursor.x as i32,
+            cursor.y as i32,
+            size,
+            Color::RAYWHITE,
+        );
+        cursor.y += size as f32 * 1.5;
+    } else if let GameOverMode::Announce2 = state.game_over_state.mode {
+        let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
+        let title = "try again?";
+        let size = 20;
+        d.draw_text(
+            title,
+            cursor.x as i32,
+            cursor.y as i32,
+            size,
+            Color::RAYWHITE,
+        );
+        cursor.y += size as f32 * 1.5;
+    }
 }

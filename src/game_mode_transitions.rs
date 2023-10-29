@@ -12,7 +12,7 @@ use crate::{
     entity_archetypes::{spawn_ball, spawn_block, spawn_paddle, spawn_walls},
     level_data,
     physics_engine::{m2p, p2m, PhysicsEngine},
-    state::{GameMode, LevelCompleteMode, PrepareLevelMode, State},
+    state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     systems, DIMS, TS_RATIO,
 };
 
@@ -82,14 +82,21 @@ pub fn playing_init_state(ecs: &mut World, state: &mut State) {
 }
 
 pub fn level_complete_init_state(ecs: &mut World, state: &mut State) {
+    if state.level == 2 {
+        state.next_game_mode = Some(GameMode::WinGame);
+    }
     state.level_complete_state.mode = LevelCompleteMode::Announce;
     state.level_complete_state.countdown = (60.0 * TS_RATIO) as u32;
 }
 
-pub fn win_game_init_state(ecs: &mut World, state: &mut State) {}
+pub fn win_game_init_state(ecs: &mut World, state: &mut State) {
+    state.win_game_state.mode = WinGameMode::Announce;
+    state.win_game_state.countdown = (60.0 * TS_RATIO) as u32;
+}
 
 pub fn game_over_init_state(ecs: &mut World, state: &mut State) {
-    ecs.clear();
+    state.game_over_state.mode = GameOverMode::Announce;
+    state.game_over_state.countdown = (60.0 * TS_RATIO) as u32;
 }
 
 pub fn delete_all_blocks(ecs: &mut World, state: &mut State) {

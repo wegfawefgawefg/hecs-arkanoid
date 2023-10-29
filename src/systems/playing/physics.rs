@@ -5,31 +5,14 @@ use rapier2d::prelude::RigidBodyHandle;
 
 use crate::audio_playing::AudioCommand;
 use crate::components::{
-    Ball, Block, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle, Physics,
-    PositionManaged, Shape, VelocityManaged,
+    Ball, BallEater, Block, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle,
+    Physics, PositionManaged, Shape, VelocityManaged, Wall,
 };
 use crate::physics_engine::{m2p, p2m};
 use crate::state::{DeletionEvent, State};
 use crate::{DIMS, TS_RATIO};
 
 pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
-    // for (entity, (ctransform, physics)) in ecs
-    //     .query::<(&mut CTransform, &mut Physics)>()
-    //     .with::<&HasRigidBody>()
-    //     .iter()
-    // {
-    //     if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-    //         if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
-    //             // Update the physics engine
-    //             // let pos = Vector2::new(p2m(ctransform.pos.x), p2m(ctransform.pos.y));
-    //             // rigid_body.set_position(pos.into(), true);
-
-    //             let vel = Vector2::new(p2m(physics.vel.x), p2m(physics.vel.y));
-    //             rigid_body.set_linvel(vel, true);
-    //         }
-    //     }
-    // }
-
     // velocity managed
     for (entity, physics) in ecs
         .query::<&mut Physics>()
@@ -38,10 +21,6 @@ pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
     {
         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
             if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
-                // Update the physics engine
-                // let pos = Vector2::new(p2m(ctransform.pos.x), p2m(ctransform.pos.y));
-                // rigid_body.set_position(pos.into(), true);
-
                 let vel = Vector2::new(p2m(physics.vel.x), p2m(physics.vel.y));
                 rigid_body.set_linvel(vel, true);
             }
@@ -56,7 +35,6 @@ pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
     {
         if let Some(body) = state.physics.get_rigid_body_handle(entity) {
             if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
-                // Update the physics engine
                 let center = ctransform.pos + shape.dims / 2.0;
                 let pos = Vector2::new(p2m(center.x), p2m(center.y));
                 rigid_body.set_position(pos.into(), true);
@@ -144,7 +122,7 @@ pub fn step_physics(ecs: &World, state: &mut State) {
 }
 
 #[allow(clippy::option_map_unit_fn)]
-pub fn damage_blocks(ecs: &mut World, state: &mut State) {
+pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
     let collision_events = state.physics.collision_events.clone();
     for event in collision_events {
         if event.started() {
@@ -183,88 +161,47 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
         // respond to the collision depending on the entity types and properties
         if let (Some(entity_a), Some(entity_b)) = (entity_a, entity_b) {
             println!("Collision between {:?} and {:?}", entity_a, entity_b);
-            //////////////// CASE A IS BALL AND B IS BLOCK  ////////////////
-            // check if a is a ball
-            let a_is_ball = ecs.satisfies::<&Ball>(entity_a).unwrap_or(false);
-
-            // if a is a ball, and b is block, decrement hp, and mark b for removal
-
-            let mut remove_b = false;
-            // if a_is_ball {
-            //     remove_b = ecs.satisfies::<&Block>(entity_b).unwrap_or(false);
-            // }
-            if a_is_ball {
+            // case: a is ball and b is block
+            if ecs.satisfies::<&Ball>(entity_a).unwrap_or(false) {
                 println!("a is a ball");
                 if let Ok((_block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_b) {
                     match health.hp {
                         0 => {}
                         1 => {
                             health.hp -= 1;
-                            remove_b = true;
                             state
                                 .audio_command_buffer
                                 .push(AudioCommand::BallBlockBounce);
+                            state
+                                .deletion_events
+                                .push(DeletionEvent::Entity { entity: entity_b });
+                            state
+                                .deletion_events
+                                .push(DeletionEvent::Physics { entity: entity_b });
+                            continue;
                         }
                         _ => {
                             health.hp -= 1;
                             state
                                 .audio_command_buffer
                                 .push(AudioCommand::BallSturdyBlockBounce);
+                            continue;
                         }
                     }
                 }
             }
 
-            if remove_b {
-                state
-                    .deletion_events
-                    .push(DeletionEvent::Entity { entity: entity_b });
-                state
-                    .deletion_events
-                    .push(DeletionEvent::Physics { entity: entity_b });
-                continue;
-            }
-
-            // case b was paddle
+            // case: a is ball and b is paddle
             if ecs.satisfies::<&Paddle>(entity_b).unwrap_or(false) {
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallPaddleBounce);
+                continue;
             }
 
-            //////////////// CASE A IS BALL AND B IS BLOCK  ////////////////
-            // check if b is a ball
-            let b_is_ball = ecs.satisfies::<&Ball>(entity_b).unwrap_or(false);
-
-            // if b is a ball, and a is a block, decrement hp, and mark a for removal
-            let mut remove_a = false;
-            // if b_is_ball {
-            //     remove_a = ecs.satisfies::<&Block>(entity_a).unwrap_or(false);
-            // }
-            // // let mut remove_a = false;
-            if b_is_ball {
-                println!("b is a ball");
-                if let Ok((_, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_a) {
-                    println!("a is a block");
-                    match health.hp {
-                        0 => {}
-                        1 => {
-                            health.hp -= 1;
-                            remove_a = true;
-                            state
-                                .audio_command_buffer
-                                .push(AudioCommand::BallBlockBounce);
-                        }
-                        _ => {
-                            health.hp -= 1;
-                            state
-                                .audio_command_buffer
-                                .push(AudioCommand::BallSturdyBlockBounce);
-                        }
-                    }
-                }
-            }
-            if remove_a {
+            // case: a is ball and b is balleater
+            if ecs.satisfies::<&BallEater>(entity_b).unwrap_or(false) {
+                state.audio_command_buffer.push(AudioCommand::BallDrop);
                 state
                     .deletion_events
                     .push(DeletionEvent::Entity { entity: entity_a });
@@ -274,11 +211,72 @@ pub fn damage_blocks(ecs: &mut World, state: &mut State) {
                 continue;
             }
 
-            // case a was paddle
+            // case: a is ball and b is wall
+            if ecs.satisfies::<&Wall>(entity_b).unwrap_or(false) {
+                state
+                    .audio_command_buffer
+                    .push(AudioCommand::BallWallBounce);
+                continue;
+            }
+
+            ////////////////    MIRRORED CASES    ////////////////
+            // case: b is ball and a is block
+            if ecs.satisfies::<&Ball>(entity_b).unwrap_or(false) {
+                println!("b is a ball");
+                if let Ok((_, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_a) {
+                    println!("a is a block");
+                    match health.hp {
+                        0 => {}
+                        1 => {
+                            health.hp -= 1;
+                            state
+                                .audio_command_buffer
+                                .push(AudioCommand::BallBlockBounce);
+                            state
+                                .deletion_events
+                                .push(DeletionEvent::Entity { entity: entity_a });
+                            state
+                                .deletion_events
+                                .push(DeletionEvent::Physics { entity: entity_a });
+                            continue;
+                        }
+                        _ => {
+                            health.hp -= 1;
+                            state
+                                .audio_command_buffer
+                                .push(AudioCommand::BallSturdyBlockBounce);
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            // case: b is ball and a is paddle
             if ecs.satisfies::<&Paddle>(entity_a).unwrap_or(false) {
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallPaddleBounce);
+                continue;
+            }
+
+            // case: b is ball and a is balleater
+            if ecs.satisfies::<&BallEater>(entity_a).unwrap_or(false) {
+                state.audio_command_buffer.push(AudioCommand::BallDrop);
+                state
+                    .deletion_events
+                    .push(DeletionEvent::Entity { entity: entity_b });
+                state
+                    .deletion_events
+                    .push(DeletionEvent::Physics { entity: entity_b });
+                continue;
+            }
+
+            // case: b is ball and a is wall
+            if ecs.satisfies::<&Wall>(entity_a).unwrap_or(false) {
+                state
+                    .audio_command_buffer
+                    .push(AudioCommand::BallWallBounce);
+                continue;
             }
         };
     }

@@ -33,3 +33,6 @@ game over
 
 120
 0.5
+
+change left  wall, 
+and the query one for checking if balleater needs get.

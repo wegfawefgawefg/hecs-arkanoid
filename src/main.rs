@@ -37,6 +37,7 @@ fn main() {
     let window_dims = DIMS * 4;
     let fullscreen = false;
     rl.set_window_size(window_dims.x as i32, window_dims.y as i32);
+    rl.hide_cursor();
     if fullscreen {
         rl.toggle_fullscreen();
         rl.set_window_size(rl.get_screen_width(), rl.get_screen_height());
