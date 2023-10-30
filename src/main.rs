@@ -1,6 +1,6 @@
 use audio::Song;
 use audio_playing::execute_audio_command_buffer;
-use glam::UVec2;
+use glam::{UVec2, Vec2};
 use hecs::World;
 use raylib::prelude::*;
 use raylib::{ffi::SetTraceLogLevel, prelude::TraceLogLevel};
@@ -23,7 +23,11 @@ mod systems;
 mod timer;
 mod window_helpers;
 
-const DIMS: UVec2 = UVec2::new(240, 160);
+pub const DIMS: UVec2 = UVec2::new(240, 160);
+use lazy_static::lazy_static;
+lazy_static! {
+    pub static ref WINDOW_DIMS: UVec2 = DIMS * 4;
+}
 
 const TIMESTEP: f32 = 1.0 / state::FRAMES_PER_SECOND as f32;
 const TS_RATIO: f32 = state::FRAMES_PER_SECOND as f32 / 60.0;
@@ -34,17 +38,16 @@ fn main() {
     }
 
     ////////////////    INIT GRAPHICS    ////////////////
-    let window_dims = DIMS * 4;
     let fullscreen = false;
-    rl.set_window_size(window_dims.x as i32, window_dims.y as i32);
-    rl.hide_cursor();
+    rl.set_window_size(WINDOW_DIMS.x as i32, WINDOW_DIMS.y as i32);
+    rl.disable_cursor();
     if fullscreen {
         rl.toggle_fullscreen();
         rl.set_window_size(rl.get_screen_width(), rl.get_screen_height());
     }
 
-    center_window(&mut rl, window_dims);
-    let mouse_scale = DIMS.as_vec2() / window_dims.as_vec2();
+    center_window(&mut rl, *WINDOW_DIMS);
+    let mouse_scale = DIMS.as_vec2() / WINDOW_DIMS.as_vec2();
     rl.set_mouse_scale(mouse_scale.x, mouse_scale.y);
 
     let mut render_texture = rl
@@ -54,7 +57,7 @@ fn main() {
             std::process::exit(1);
         });
     let mut large_render_texture = rl
-        .load_render_texture(&rlt, window_dims.x, window_dims.y)
+        .load_render_texture(&rlt, WINDOW_DIMS.x, WINDOW_DIMS.y)
         .unwrap_or_else(|e| {
             println!("Error creating render texture: {}", e);
             std::process::exit(1);
@@ -90,9 +93,31 @@ fn main() {
         game_mode_transitions::transition_game_mode(&mut ecs, &mut state);
         input_processing::process_input(&mut rl, &mut state);
 
+        // lock mouse to screen
+        // if rl.is_window_focused() {
+        //     let mouse_pos = rl.get_mouse_position();
+        //     let mp = Vec2::new(mouse_pos.x, mouse_pos.y);
+        //     let mouse_window_pos = mp / DIMS.as_vec2() * WINDOW_DIMS.as_vec2();
+        //     println!("mouse_window_pos: {:?}", mouse_window_pos);
+        //     if mouse_window_pos.x < 0.0
+        //         || mouse_window_pos.x > WINDOW_DIMS.x as f32
+        //         || mouse_window_pos.y < 0.0
+        //         || mouse_window_pos.y > WINDOW_DIMS.y as f32
+        //     {
+        //         rl.set_mouse_position(Vector2::new(
+        //             WINDOW_DIMS.x as f32 / 2.0,
+        //             WINDOW_DIMS.y as f32 / 2.0,
+        //         ));
+        //         rl.set_mouse_position(Vector2::new(
+
+        //         ));
+        //     }
+        // }
+
         let dt = rl.get_frame_time();
         state.time_since_last_update += dt;
         if state.time_since_last_update > TIMESTEP {
+            state.t += 1.0;
             state.time_since_last_update = 0.0;
 
             state.render_command_buffer.clear();
@@ -123,7 +148,7 @@ fn main() {
             &mut render_texture,
             &mut large_render_texture,
             fullscreen,
-            window_dims,
+            *WINDOW_DIMS,
             &shaders,
         );
 

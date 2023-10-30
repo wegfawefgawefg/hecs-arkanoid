@@ -4,7 +4,9 @@ use rapier2d::prelude::*;
 use raylib::prelude::Color;
 
 use crate::{
-    components::{Ball, BallEater, Block, CTransform, Health, Paddle, Physics, Shape, Wall},
+    components::{
+        Ball, BallEater, BallUnbreakable, Block, CTransform, Health, Paddle, Physics, Shape, Wall,
+    },
     physics_engine::m2p,
     render_commands::RenderCommand,
     state::State,
@@ -54,14 +56,16 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render every block
-    for (_, (block, ctransform, shape, health)) in
+    for (entity, (block, ctransform, shape, health)) in
         ecs.query::<(&Block, &CTransform, &Shape, &Health)>().iter()
     {
+        let ball_unbreakable = ecs.satisfies::<&BallUnbreakable>(entity).unwrap_or(false);
         state.render_command_buffer.push(RenderCommand::Block {
             pos: ctransform.pos,
             dims: shape.dims,
             color: block.color,
             hp: health.hp,
+            ball_unbreakable,
         })
     }
 
@@ -103,6 +107,7 @@ pub fn render_physics(state: &mut State) {
                 dims: psize,
                 color: Color::RED, // or any color you prefer for debug
                 hp: 1,
+                ball_unbreakable: false,
             });
         }
     }

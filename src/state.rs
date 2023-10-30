@@ -29,6 +29,7 @@ pub struct State {
     pub fps: f32,
     pub running: bool,
     pub time_since_last_update: f32,
+    pub t: f32,
     pub rng: StdRng,
 
     pub game_mode: GameMode,
@@ -100,6 +101,8 @@ impl State {
             time_since_last_update: 0.0,
 
             rng,
+
+            t: 0.0,
 
             game_mode,
             next_game_mode: transition_to,

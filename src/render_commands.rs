@@ -14,6 +14,7 @@ pub enum RenderCommand {
         dims: Vec2,
         color: Color,
         hp: u32,
+        ball_unbreakable: bool,
     },
     Ball {
         pos: Vec2,
@@ -75,20 +76,32 @@ pub fn execute_render_command_buffer(
                 dims,
                 color,
                 hp,
+                ball_unbreakable,
             } => {
-                d.draw_rectangle_lines(
-                    pos.x as i32,
-                    pos.y as i32,
-                    dims.x as i32,
-                    dims.y as i32,
-                    color,
-                );
-                if *hp > 1 {
-                    d.draw_line_v(
-                        Vector2::new(pos.x, pos.y),
-                        Vector2::new(pos.x + dims.x - 1.0, pos.y + dims.y),
+                if *ball_unbreakable {
+                    d.draw_rectangle(
+                        pos.x as i32,
+                        pos.y as i32,
+                        dims.x as i32,
+                        dims.y as i32,
                         *color,
                     );
+                    continue;
+                } else {
+                    d.draw_rectangle_lines(
+                        pos.x as i32,
+                        pos.y as i32,
+                        dims.x as i32,
+                        dims.y as i32,
+                        color,
+                    );
+                    if *hp > 1 {
+                        d.draw_line_v(
+                            Vector2::new(pos.x, pos.y),
+                            Vector2::new(pos.x + dims.x - 1.0, pos.y + dims.y),
+                            *color,
+                        );
+                    }
                 }
             }
             RenderCommand::Paddle { pos, dims, color } => d.draw_rectangle_lines(

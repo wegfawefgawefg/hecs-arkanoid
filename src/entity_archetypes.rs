@@ -6,8 +6,9 @@ use raylib::prelude::Color;
 
 use crate::{
     components::{
-        Ball, BallEater, Block, Bouncy, CTransform, HasRigidBody, Health, InputControlled, OwnedBy,
-        Paddle, Physics, Player, PositionManaged, Shape, VelocityManaged, Wall,
+        Ball, BallEater, BallUnbreakable, Block, Bouncy, CTransform, HasRigidBody, Health,
+        InputControlled, OwnedBy, Paddle, Physics, Player, PositionManaged, Shape, VelocityManaged,
+        Wall,
     },
     physics_engine::p2m,
     state::State,
@@ -207,6 +208,7 @@ pub fn spawn_walls(ecs: &mut World, state: &mut State) {
     //     .set_rigid_body_mapping(right_wall, right_wall_body_handle);
 }
 
+pub const BALL_SHAPE: Vec2 = Vec2::new(4.0, 4.0);
 pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owner: Entity) {
     let ball_entity = ecs.spawn((
         Ball,
@@ -216,15 +218,14 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         },
         Physics { vel, rot_vel: 0.0 },
         OwnedBy { owner },
-        Shape {
-            dims: Vec2::new(4.0, 4.0),
-        },
+        Shape { dims: BALL_SHAPE },
         Bouncy,
         HasRigidBody,
         VelocityManaged,
     ));
     // let ball_collider = ColliderBuilder::ball(p2m(8.0) / 2.0)
-    let ball_collider = ColliderBuilder::cuboid(p2m(4.0) / 2.0, p2m(4.0) / 2.0)
+    // let ball_collider = ColliderBuilder::cuboid(p2m(BALL_SHAPE.x) / 2.0, p2m(BALL_SHAPE.y) / 2.0)
+    let ball_collider = ColliderBuilder::ball(p2m(BALL_SHAPE.x) / 2.0)
         .restitution(1.0)
         .friction(0.0)
         .mass(0.0001)
@@ -236,7 +237,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         .lock_rotations()
         .linear_damping(0.0)
         .angular_damping(0.0)
-        .can_sleep(false)
+        .can_sleep(true)
         .ccd_enabled(true)
         .build();
     let ball_body_handle = state.physics.rigid_body_set.insert(ball_rigid_body);
@@ -257,6 +258,7 @@ pub fn spawn_block(
     shape: Vec2,
     color: Color,
     hp: u32,
+    ball_unbreakable: bool,
 ) {
     let block_entity = ecs.spawn((
         CTransform {
@@ -268,6 +270,9 @@ pub fn spawn_block(
         Health { hp },
         HasRigidBody,
     ));
+    if ball_unbreakable {
+        ecs.insert_one(block_entity, BallUnbreakable).unwrap();
+    }
 
     let block_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
         .restitution(1.0)
@@ -324,7 +329,8 @@ pub fn spawn_paddle(
             p2m(pos.x + shape.x / 2.0),
             p2m(pos.y + shape.y / 2.0)
         ])
-        .can_sleep(false)
+        // .ccd_enabled(true)
+        .can_sleep(true)
         .build();
 
     let paddle_body_handle = state.physics.rigid_body_set.insert(paddle_rigid_body);

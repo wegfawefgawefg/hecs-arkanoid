@@ -1,6 +1,6 @@
 use glam::Vec2;
 use hecs::{Entity, World};
-use raylib::RaylibHandle;
+use raylib::{prelude::Vector2, RaylibHandle};
 
 use crate::{
     audio_playing::AudioCommand,
@@ -8,7 +8,7 @@ use crate::{
     entity_archetypes::spawn_ball,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     systems::{self},
-    DIMS, TS_RATIO,
+    DIMS, TS_RATIO, WINDOW_DIMS,
 };
 
 pub fn step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
@@ -17,7 +17,7 @@ pub fn step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
             title_step(state, ecs);
         }
         GameMode::PrepareLevel => {
-            prepare_level_step(state, ecs);
+            prepare_level_step(rl, state, ecs);
         }
         GameMode::Playing => {
             playing_step(state, ecs);
@@ -37,7 +37,7 @@ pub fn step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
 ////////////////////////    PER GAME MODE STEPPING     ////////////////////////
 pub fn title_step(state: &mut State, ecs: &mut World) {}
 
-pub fn prepare_level_step(state: &mut State, ecs: &mut World) {
+pub fn prepare_level_step(rl: &mut RaylibHandle, state: &mut State, ecs: &mut World) {
     if state.prepare_level_state.countdown > 0 {
         state.prepare_level_state.countdown -= 1;
     }
@@ -80,6 +80,9 @@ pub fn prepare_level_step(state: &mut State, ecs: &mut World) {
         }
         PrepareLevelMode::SpawnBall => {
             if state.prepare_level_state.countdown == 0 {
+                // set mouse position
+                let center = (*WINDOW_DIMS).as_vec2();
+                rl.set_mouse_position(Vector2::new(center.x / 2.0, center.y));
                 state.next_game_mode = Some(GameMode::Playing);
             }
         }
@@ -91,8 +94,13 @@ pub fn playing_step(state: &mut State, ecs: &mut World) {
         state.level_change_delay -= 1;
     }
 
+    // systems::playing::physics::constantly_resize_paddle(ecs, state);
+
     systems::playing::input_processing::process_inputs(ecs, state);
     // systems::playing::physics::boundary_checking(ecs, state);
+
+    // all reshaping needs to happen before the ecs is synced to physics
+
     systems::playing::physics::sync_ecs_to_physics(ecs, state);
     systems::playing::physics::step_physics(ecs, state);
     systems::playing::physics::respond_to_collisions(ecs, state);

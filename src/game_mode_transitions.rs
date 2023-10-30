@@ -76,7 +76,7 @@ pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
     systems::playing::physics::step_physics(ecs, state);
 }
 
-const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 30.0, y: 8.0 };
+pub const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 30.0, y: 8.0 };
 pub fn playing_init_state(ecs: &mut World, state: &mut State) {
     println!("playing init");
 }
@@ -166,7 +166,8 @@ pub fn spawn_level(ecs: &mut World, state: &mut State, level: u32) {
             // put a block
             // hp is either 1 or 2 if color_index is 9
             let hp = if color_index == 9 { 2 } else { 1 };
-            spawn_block(ecs, state, cursor, BLOCK_SHAPE, color, hp);
+            let ball_unbreakable = color_index == 10;
+            spawn_block(ecs, state, cursor, BLOCK_SHAPE, color, hp, ball_unbreakable);
 
             // advance cursor x by block width
             cursor.x += BLOCK_WIDTH;

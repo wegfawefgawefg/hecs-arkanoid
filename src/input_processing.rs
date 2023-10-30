@@ -44,7 +44,7 @@ pub fn title_process_input(rl: &mut RaylibHandle, state: &mut State) {
         state.next_game_mode = Some(GameMode::PrepareLevel);
     }
     state.title_inputs = title_inputs;
-    state.level = 1;
+    state.level = 3;
 }
 
 pub fn prepare_level_process_input(rl: &mut RaylibHandle, state: &mut State) {}

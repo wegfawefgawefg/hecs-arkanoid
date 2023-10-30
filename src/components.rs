@@ -23,6 +23,8 @@ pub struct Health {
     pub hp: u32,
 }
 
+pub struct BallUnbreakable;
+
 pub struct Paddle {
     pub size: u32,
 }
@@ -32,6 +34,7 @@ pub struct Shape {
     pub dims: Vec2,
 }
 
+#[derive(Clone, Copy)]
 pub struct Physics {
     pub vel: Vec2,
     pub rot_vel: f32,

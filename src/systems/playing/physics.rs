@@ -5,9 +5,10 @@ use rapier2d::prelude::RigidBodyHandle;
 
 use crate::audio_playing::AudioCommand;
 use crate::components::{
-    Ball, BallEater, Block, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle,
-    Physics, PositionManaged, Shape, VelocityManaged, Wall,
+    Ball, BallEater, BallUnbreakable, Block, CTransform, FreeToLeavePlayField, HasRigidBody,
+    Health, Paddle, Physics, PositionManaged, Shape, VelocityManaged, Wall,
 };
+use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
 use crate::physics_engine::{m2p, p2m};
 use crate::state::{DeletionEvent, State};
 use crate::{DIMS, TS_RATIO};
@@ -43,7 +44,7 @@ pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
     }
 }
 const ANGLE_45_IN_RAD: f32 = std::f32::consts::PI / 3.0;
-const BALL_VEL: f32 = 300.0 * (1.0 / TS_RATIO);
+const BALL_VEL: f32 = 200.0 * (1.0 / TS_RATIO);
 pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
     for (entity, physics) in ecs
         .query::<&mut Physics>()
@@ -121,6 +122,30 @@ pub fn step_physics(ecs: &World, state: &mut State) {
     }
 }
 
+pub fn constantly_resize_paddle(ecs: &mut World, state: &mut State) {
+    let new_shape = Vec2::new(
+        BASE_PADDLE_SHAPE.x * (1.0 + (state.t * 0.1).sin() / 2.0) + 10.0,
+        BASE_PADDLE_SHAPE.y,
+    );
+    println!("new shape: {:?}", new_shape);
+    for (entity, shape) in ecs.query::<&mut Shape>().with::<&Paddle>().iter() {
+        shape.dims = new_shape;
+
+        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
+            if let Some(rigid_body) = state.physics.rigid_body_set.get(body) {
+                for collider_handle in rigid_body.colliders().iter() {
+                    if let Some(collider) = state.physics.collider_set.get_mut(*collider_handle) {
+                        collider.set_shape(rapier2d::geometry::ColliderShape::cuboid(
+                            p2m(new_shape.x / 2.0),
+                            p2m(new_shape.y / 2.0),
+                        ));
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[allow(clippy::option_map_unit_fn)]
 pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
     let collision_events = state.physics.collision_events.clone();
@@ -164,6 +189,18 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
             // case: a is ball and b is block
             if ecs.satisfies::<&Ball>(entity_a).unwrap_or(false) {
                 println!("a is a ball");
+                // check if b is block and BallUnbreakable
+                if ecs
+                    .satisfies::<(&Block, &BallUnbreakable)>(entity_b)
+                    .unwrap_or(false)
+                {
+                    state
+                        .audio_command_buffer
+                        .push(AudioCommand::BallBlockBounce);
+                    continue;
+                }
+
+                // reduce block health on hit
                 if let Ok((_block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_b) {
                     match health.hp {
                         0 => {}
@@ -196,6 +233,48 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallPaddleBounce);
+
+                let mut ball_new_direction: Option<f32> = None;
+
+                // determine if the ball hit the left, middle or right of the paddle
+                // if hit left, set ball velocity to -
+                // if hit right, set ball velocity to +
+                if let Ok(mut res) = ecs.query_one::<(&Paddle, &CTransform, &Shape)>(entity_b) {
+                    if let Some((_, ctransform, shape)) = res.get() {
+                        let paddle_start = ctransform.pos.x;
+                        let paddle_end = paddle_start + shape.dims.x;
+
+                        // get ball position
+                        if let Ok(mut res) = ecs.query_one::<(&Ball, &CTransform, &Shape)>(entity_a)
+                        {
+                            if let Some((_, ctransform, shape)) = res.get() {
+                                let ball_center = ctransform.pos.x + shape.dims.x / 2.0;
+
+                                // if ball_pos is in the left 3rd, set ball velocity to -
+                                let paddle_left_third_end =
+                                    paddle_start + (paddle_end - paddle_start) / 3.0;
+                                if ball_center > paddle_start && ball_center < paddle_left_third_end
+                                {
+                                    ball_new_direction = Some(-1.0);
+                                }
+                                let paddle_right_third_start =
+                                    paddle_end - (paddle_end - paddle_start) / 3.0;
+                                if ball_center > paddle_right_third_start
+                                    && ball_center < paddle_end
+                                {
+                                    ball_new_direction = Some(1.0);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(new_direction) = ball_new_direction {
+                    if let Ok((_, physics)) = ecs.query_one_mut::<(&Ball, &mut Physics)>(entity_a) {
+                        physics.vel.x = physics.vel.x.abs() * new_direction;
+                    }
+                }
+
                 continue;
             }
 
@@ -223,8 +302,22 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
             // case: b is ball and a is block
             if ecs.satisfies::<&Ball>(entity_b).unwrap_or(false) {
                 println!("b is a ball");
+                // check if a is block and BallUnbreakable
+                if ecs
+                    .satisfies::<(&Block, &BallUnbreakable)>(entity_a)
+                    .unwrap_or(false)
+                {
+                    state
+                        .audio_command_buffer
+                        .push(AudioCommand::BallBlockBounce);
+                    continue;
+                }
+
+                // reduce block health on hit
                 if let Ok((_, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(entity_a) {
                     println!("a is a block");
+
+                    // reduce block health on hit
                     match health.hp {
                         0 => {}
                         1 => {
@@ -256,6 +349,48 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallPaddleBounce);
+
+                let mut ball_new_direction: Option<f32> = None;
+
+                // determine if the ball hit the left, middle or right of the paddle
+                // if hit left, set ball velocity to -
+                // if hit right, set ball velocity to +
+                if let Ok(mut res) = ecs.query_one::<(&Paddle, &CTransform, &Shape)>(entity_a) {
+                    if let Some((_, ctransform, shape)) = res.get() {
+                        let paddle_start = ctransform.pos.x;
+                        let paddle_end = paddle_start + shape.dims.x;
+
+                        // get ball position
+                        if let Ok(mut res) = ecs.query_one::<(&Ball, &CTransform, &Shape)>(entity_b)
+                        {
+                            if let Some((_, ctransform, shape)) = res.get() {
+                                let ball_center = ctransform.pos.x + shape.dims.x / 2.0;
+
+                                // if ball_pos is in the left 3rd, set ball velocity to -
+                                let paddle_left_third_end =
+                                    paddle_start + (paddle_end - paddle_start) / 3.0;
+                                if ball_center > paddle_start && ball_center < paddle_left_third_end
+                                {
+                                    ball_new_direction = Some(-1.0);
+                                }
+                                let paddle_right_third_start =
+                                    paddle_end - (paddle_end - paddle_start) / 3.0;
+                                if ball_center > paddle_right_third_start
+                                    && ball_center < paddle_end
+                                {
+                                    ball_new_direction = Some(1.0);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(new_direction) = ball_new_direction {
+                    if let Ok((_, physics)) = ecs.query_one_mut::<(&Ball, &mut Physics)>(entity_b) {
+                        physics.vel.x = physics.vel.x.abs() * new_direction;
+                    }
+                }
+
                 continue;
             }
 
