@@ -30,4 +30,9 @@ pub fn process_inputs(ecs: &mut World, state: &mut State) {
         state.level_change_delay = LEVEL_CHANGE_DELAY_DEFAULT;
         spawn_level(ecs, state, state.level);
     }
+
+    if state.playing_inputs.restart_level {
+        state.level_change_delay = LEVEL_CHANGE_DELAY_DEFAULT;
+        state.next_game_mode = Some(crate::state::GameMode::PrepareLevel);
+    }
 }

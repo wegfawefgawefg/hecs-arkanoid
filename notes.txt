@@ -36,3 +36,8 @@ game over
 
 change left  wall, 
 and the query one for checking if balleater needs get.
+
+contact channels
+0001 - ball: paddle and block 
+0010 - powerup pickup / paddle
+0100 - bullet / blocks

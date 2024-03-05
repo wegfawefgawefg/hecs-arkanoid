@@ -5,7 +5,7 @@ use raylib::prelude::Color;
 
 use crate::{
     components::{
-        Ball, BallEater, BallUnbreakable, Block, CTransform, Health, Paddle, Physics, Shape, Wall,
+        Ball, BallEater, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock, Wall,
     },
     physics_engine::m2p,
     render_commands::RenderCommand,
@@ -59,7 +59,7 @@ pub fn render(ecs: &World, state: &mut State) {
     for (entity, (block, ctransform, shape, health)) in
         ecs.query::<(&Block, &CTransform, &Shape, &Health)>().iter()
     {
-        let ball_unbreakable = ecs.satisfies::<&BallUnbreakable>(entity).unwrap_or(false);
+        let ball_unbreakable = ecs.satisfies::<&StrongBlock>(entity).unwrap_or(false);
         state.render_command_buffer.push(RenderCommand::Block {
             pos: ctransform.pos,
             dims: shape.dims,

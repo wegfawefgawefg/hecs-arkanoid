@@ -5,8 +5,8 @@ use rapier2d::prelude::RigidBodyHandle;
 
 use crate::audio_playing::AudioCommand;
 use crate::components::{
-    Ball, BallEater, BallUnbreakable, Block, CTransform, FreeToLeavePlayField, HasRigidBody,
-    Health, Paddle, Physics, PositionManaged, Shape, VelocityManaged, Wall,
+    Ball, BallEater, Block, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle,
+    Physics, PositionManaged, Shape, StrongBlock, VelocityManaged, Wall,
 };
 use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
 use crate::physics_engine::{m2p, p2m};
@@ -52,6 +52,8 @@ pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
         .iter()
     {
         if let Some(_body) = state.physics.get_rigid_body_handle(entity) {
+            // physics.vel = physics.vel.normalize() * BALL_VEL;
+
             let x_sign = physics.vel.x.signum();
             let y_sign = physics.vel.y.signum();
 
@@ -191,7 +193,7 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
                 println!("a is a ball");
                 // check if b is block and BallUnbreakable
                 if ecs
-                    .satisfies::<(&Block, &BallUnbreakable)>(entity_b)
+                    .satisfies::<(&Block, &StrongBlock)>(entity_b)
                     .unwrap_or(false)
                 {
                     state
@@ -271,7 +273,8 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
 
                 if let Some(new_direction) = ball_new_direction {
                     if let Ok((_, physics)) = ecs.query_one_mut::<(&Ball, &mut Physics)>(entity_a) {
-                        physics.vel.x = physics.vel.x.abs() * new_direction;
+                        physics.vel.x = BALL_VEL * new_direction;
+                        physics.vel.y = -BALL_VEL;
                     }
                 }
 
@@ -304,7 +307,7 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
                 println!("b is a ball");
                 // check if a is block and BallUnbreakable
                 if ecs
-                    .satisfies::<(&Block, &BallUnbreakable)>(entity_a)
+                    .satisfies::<(&Block, &StrongBlock)>(entity_a)
                     .unwrap_or(false)
                 {
                     state
@@ -387,7 +390,8 @@ pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
 
                 if let Some(new_direction) = ball_new_direction {
                     if let Ok((_, physics)) = ecs.query_one_mut::<(&Ball, &mut Physics)>(entity_b) {
-                        physics.vel.x = physics.vel.x.abs() * new_direction;
+                        physics.vel.x = BALL_VEL * new_direction;
+                        physics.vel.y = -BALL_VEL;
                     }
                 }
 

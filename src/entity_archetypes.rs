@@ -1,14 +1,16 @@
 use glam::Vec2;
 use hecs::{Entity, World};
 use nalgebra::vector;
-use rapier2d::prelude::{ActiveEvents, ColliderBuilder, Point, RigidBodyBuilder};
+use rapier2d::prelude::{
+    ActiveEvents, ColliderBuilder, InteractionGroups, Point, RigidBodyBuilder,
+};
 use raylib::prelude::Color;
 
 use crate::{
     components::{
-        Ball, BallEater, BallUnbreakable, Block, Bouncy, CTransform, HasRigidBody, Health,
-        InputControlled, OwnedBy, Paddle, Physics, Player, PositionManaged, Shape, VelocityManaged,
-        Wall,
+        Ball, BallEater, Block, Bouncy, CTransform, HasRigidBody, Health, InputControlled, OwnedBy,
+        Paddle, Physics, Player, PositionManaged, PowerUp, PowerUpType, Shape, StrongBlock,
+        VelocityManaged, Wall,
     },
     physics_engine::p2m,
     state::State,
@@ -224,12 +226,13 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         VelocityManaged,
     ));
     // let ball_collider = ColliderBuilder::ball(p2m(8.0) / 2.0)
-    // let ball_collider = ColliderBuilder::cuboid(p2m(BALL_SHAPE.x) / 2.0, p2m(BALL_SHAPE.y) / 2.0)
-    let ball_collider = ColliderBuilder::ball(p2m(BALL_SHAPE.x) / 2.0)
+    let ball_collider = ColliderBuilder::cuboid(p2m(BALL_SHAPE.x) / 2.0, p2m(BALL_SHAPE.y) / 2.0)
+        // let ball_collider = ColliderBuilder::ball(p2m(BALL_SHAPE.x) / 2.0)
         .restitution(1.0)
         .friction(0.0)
         .mass(0.0001)
         .active_events(ActiveEvents::COLLISION_EVENTS)
+        .collision_groups(InteractionGroups::new(0b0001.into(), 0b0001.into()))
         .build();
     let ball_rigid_body = RigidBodyBuilder::dynamic()
         .translation(vector![p2m(pos.x), p2m(pos.y)])
@@ -237,7 +240,7 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         .lock_rotations()
         .linear_damping(0.0)
         .angular_damping(0.0)
-        .can_sleep(true)
+        .can_sleep(false)
         .ccd_enabled(true)
         .build();
     let ball_body_handle = state.physics.rigid_body_set.insert(ball_rigid_body);
@@ -271,18 +274,20 @@ pub fn spawn_block(
         HasRigidBody,
     ));
     if ball_unbreakable {
-        ecs.insert_one(block_entity, BallUnbreakable).unwrap();
+        ecs.insert_one(block_entity, StrongBlock).unwrap();
     }
 
     let block_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
         .restitution(1.0)
         .friction(0.0)
+        .collision_groups(InteractionGroups::new(0b0101.into(), 0b0101.into()))
         .build();
     let block_rigid_body = RigidBodyBuilder::fixed()
         .translation(vector![
             p2m(pos.x + shape.x / 2.0),
             p2m(pos.y + shape.y / 2.0)
         ])
+        .ccd_enabled(true)
         .can_sleep(false)
         .build();
 
@@ -323,6 +328,7 @@ pub fn spawn_paddle(
 
     let paddle_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
         .restitution(1.0)
+        .collision_groups(InteractionGroups::new(0b0011.into(), 0b0011.into()))
         .build();
     let paddle_rigid_body = RigidBodyBuilder::kinematic_position_based()
         .translation(vector![
@@ -330,7 +336,7 @@ pub fn spawn_paddle(
             p2m(pos.y + shape.y / 2.0)
         ])
         // .ccd_enabled(true)
-        .can_sleep(true)
+        .can_sleep(false)
         .build();
 
     let paddle_body_handle = state.physics.rigid_body_set.insert(paddle_rigid_body);
@@ -344,3 +350,48 @@ pub fn spawn_paddle(
         .set_rigid_body_mapping(paddle_entity, paddle_body_handle);
     paddle_entity
 }
+
+// pub fn spawn_powerup(
+//     ecs: &mut World,
+//     state: &mut State,
+//     pos: Vec2,
+//     shape: Vec2,
+//     power_up_type: PowerUpType,
+// ) -> Entity {
+//     let power_up_entity = ecs.spawn((
+//         CTransform {
+//             pos,
+//             rot: Vec2::new(0.0, 0.0),
+//         },
+//         Physics {
+//             vel: Vec2::new(0.0, -2.0),
+//             rot_vel: 0.0,
+//         },
+//         Shape { dims: shape },
+//         PowerUp { power_up_type },
+//     ));
+
+//     let paddle_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
+//         .restitution(1.0)
+//         .collision_groups(InteractionGroups::new(0b0011.into(), 0b0011.into()))
+//         .build();
+//     let paddle_rigid_body = RigidBodyBuilder::kinematic_position_based()
+//         .translation(vector![
+//             p2m(pos.x + shape.x / 2.0),
+//             p2m(pos.y + shape.y / 2.0)
+//         ])
+//         // .ccd_enabled(true)
+//         .can_sleep(false)
+//         .build();
+
+//     let paddle_body_handle = state.physics.rigid_body_set.insert(paddle_rigid_body);
+//     state.physics.collider_set.insert_with_parent(
+//         paddle_collider,
+//         paddle_body_handle,
+//         &mut state.physics.rigid_body_set,
+//     );
+//     state
+//         .physics
+//         .set_rigid_body_mapping(paddle_entity, paddle_body_handle);
+//     paddle_entity
+// }

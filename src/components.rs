@@ -23,7 +23,7 @@ pub struct Health {
     pub hp: u32,
 }
 
-pub struct BallUnbreakable;
+pub struct StrongBlock;
 
 pub struct Paddle {
     pub size: u32,
@@ -85,3 +85,20 @@ pub struct HasSensor;
 
 pub struct VelocityManaged;
 pub struct PositionManaged;
+
+pub enum PowerUpType {
+    Enlarge,
+    Shrink,
+
+    SpeedUp,
+    SlowDown,
+
+    BallSplit,
+
+    Lasers,
+    BombBall,
+}
+
+pub struct PowerUp {
+    pub power_up_type: PowerUpType,
+}

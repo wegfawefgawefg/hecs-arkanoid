@@ -44,7 +44,7 @@ pub fn title_process_input(rl: &mut RaylibHandle, state: &mut State) {
         state.next_game_mode = Some(GameMode::PrepareLevel);
     }
     state.title_inputs = title_inputs;
-    state.level = 3;
+    state.level = 1;
 }
 
 pub fn prepare_level_process_input(rl: &mut RaylibHandle, state: &mut State) {}
@@ -64,6 +64,7 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
         confirm: false,
         next_level: false,
         previous_level: false,
+        restart_level: false,
     };
     if rl.is_key_down(raylib::consts::KeyboardKey::KEY_A) {
         inputs.left = true;
@@ -73,6 +74,9 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     }
     if rl.is_key_down(raylib::consts::KeyboardKey::KEY_SPACE) {
         inputs.confirm = true;
+    }
+    if rl.is_key_down(raylib::consts::KeyboardKey::KEY_R) {
+        inputs.restart_level = true;
     }
 
     // advance level up and down if right or left arrow key is pressed
@@ -131,6 +135,8 @@ pub struct PlayingInputs {
 
     pub next_level: bool,
     pub previous_level: bool,
+
+    pub restart_level: bool,
 }
 impl PlayingInputs {
     pub fn new() -> PlayingInputs {
@@ -141,6 +147,8 @@ impl PlayingInputs {
 
             next_level: false,
             previous_level: false,
+
+            restart_level: false,
         }
     }
 }

@@ -101,10 +101,10 @@ pub fn playing_step(state: &mut State, ecs: &mut World) {
 
     // all reshaping needs to happen before the ecs is synced to physics
 
+    systems::playing::physics::set_ball_to_angle(ecs, state);
     systems::playing::physics::sync_ecs_to_physics(ecs, state);
     systems::playing::physics::step_physics(ecs, state);
     systems::playing::physics::respond_to_collisions(ecs, state);
-    systems::playing::physics::set_ball_to_angle(ecs, state);
     systems::playing::cleanup::process_deletion_events(ecs, state);
     systems::playing::state_changing::check_for_level_complete(ecs, state);
     systems::playing::state_changing::check_for_level_lost(ecs, state);
