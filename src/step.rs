@@ -133,7 +133,7 @@ pub fn level_complete_step(state: &mut State, _ecs: &mut World) {
             }
         }
         LevelCompleteMode::Pause => {
-            if state.prepare_level_state.countdown == 0 {
+            if state.level_complete_state.countdown == 0 {
                 state.level += 1;
                 state.next_game_mode = Some(GameMode::PrepareLevel);
             }
