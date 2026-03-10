@@ -94,6 +94,13 @@ pub struct PowerUpDrop;
 #[derive(Clone, Copy)]
 pub struct LaserShot;
 
+#[derive(Clone, Copy)]
+pub struct ImpactParticle {
+    pub color: Color,
+    pub frames_left: u32,
+    pub max_frames: u32,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PowerUpType {
     Enlarge,

@@ -39,15 +39,29 @@ pub fn execute_audio_command_buffer(
                     SoundEffect::BallBounce4 as usize,
                 ];
                 let random_explosion = explosion_variants[rng.random_range(0..4)];
+                audio.sounds[random_explosion].set_pitch(rng.random_range(0.96..1.06));
+                audio.sounds[random_explosion].set_volume(rng.random_range(0.85..1.0));
                 audio.sounds[random_explosion].play();
             }
             AudioCommand::BallWallBounce => {
+                audio.sounds[SoundEffect::BallWallBounce as usize]
+                    .set_pitch(rng.random_range(0.98..1.04));
+                audio.sounds[SoundEffect::BallWallBounce as usize]
+                    .set_volume(rng.random_range(0.8..0.95));
                 audio.sounds[SoundEffect::BallWallBounce as usize].play();
             }
             AudioCommand::BallSturdyBlockBounce => {
+                audio.sounds[SoundEffect::BallSturdyBlockBounce as usize]
+                    .set_pitch(rng.random_range(0.94..1.0));
+                audio.sounds[SoundEffect::BallSturdyBlockBounce as usize]
+                    .set_volume(rng.random_range(0.85..1.0));
                 audio.sounds[SoundEffect::BallSturdyBlockBounce as usize].play();
             }
             AudioCommand::BallPaddleBounce => {
+                audio.sounds[SoundEffect::BallHitPaddle as usize]
+                    .set_pitch(rng.random_range(0.97..1.05));
+                audio.sounds[SoundEffect::BallHitPaddle as usize]
+                    .set_volume(rng.random_range(0.85..1.0));
                 audio.sounds[SoundEffect::BallHitPaddle as usize].play();
             }
             AudioCommand::LevelStart => {
@@ -60,9 +74,12 @@ pub fn execute_audio_command_buffer(
                 audio.sounds[SoundEffect::BallDrop as usize].play();
             }
             AudioCommand::PowerUpCatch => {
+                audio.sounds[SoundEffect::Confirm as usize].set_pitch(rng.random_range(0.98..1.08));
                 audio.sounds[SoundEffect::Confirm as usize].play();
             }
             AudioCommand::PaddleLaser => {
+                audio.sounds[SoundEffect::SmallLaser as usize]
+                    .set_pitch(rng.random_range(0.98..1.04));
                 audio.sounds[SoundEffect::SmallLaser as usize].play();
             }
             AudioCommand::LevelLost => {

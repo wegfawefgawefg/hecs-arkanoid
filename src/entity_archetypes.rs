@@ -4,8 +4,9 @@ use raylib::prelude::Color;
 
 use crate::{
     components::{
-        Ball, BallEater, Block, Bouncy, CTransform, Health, InputControlled, LaserShot, OwnedBy,
-        Paddle, Physics, Player, PowerUp, PowerUpDrop, PowerUpType, Shape, StrongBlock, Wall,
+        Ball, BallEater, Block, Bouncy, CTransform, Health, ImpactParticle, InputControlled,
+        LaserShot, OwnedBy, Paddle, Physics, Player, PowerUp, PowerUpDrop, PowerUpType, Shape,
+        StrongBlock, Wall,
     },
     DIMS,
 };
@@ -147,5 +148,30 @@ pub fn spawn_laser_shot(ecs: &mut World, pos: Vec2) {
             rot_vel: 0.0,
         },
         Shape { dims: LASER_SHAPE },
+    ));
+}
+
+pub fn spawn_impact_particle(
+    ecs: &mut World,
+    pos: Vec2,
+    vel: Vec2,
+    color: Color,
+    size: f32,
+    frames_left: u32,
+) {
+    ecs.spawn((
+        ImpactParticle {
+            color,
+            frames_left,
+            max_frames: frames_left.max(1),
+        },
+        CTransform {
+            pos,
+            rot: Vec2::ZERO,
+        },
+        Physics { vel, rot_vel: 0.0 },
+        Shape {
+            dims: Vec2::splat(size),
+        },
     ));
 }

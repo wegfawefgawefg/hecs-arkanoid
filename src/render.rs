@@ -3,7 +3,7 @@ use hecs::World;
 use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode};
 
 use crate::{
-    gameplay_render,
+    gameplay_render, juice,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     DIMS,
 };
@@ -33,13 +33,24 @@ pub fn draw(
             game_over_render(ecs, state, low_res_draw_handle);
         }
     }
+
+    if state.screen_flash > 0.0 {
+        let alpha = (state.screen_flash * 96.0).clamp(0.0, 96.0) as u8;
+        low_res_draw_handle.draw_rectangle(
+            0,
+            0,
+            DIMS.x as i32,
+            DIMS.y as i32,
+            Color::new(255, 255, 255, alpha),
+        );
+    }
 }
 
 ////////////////////////    PER GAME MODE DRAW FUNCTIONS     ////////////////////////
 pub fn title_render(_state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
     let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
     let title = "HECS-arkanoid!";
-    let size = 20;
+    let size = juice::text_pulse_size(_state, 20, 3.0);
     d.draw_text(title, cursor.x as i32, cursor.y as i32, size, Color::WHITE);
     cursor.y += size as f32 * 1.5;
 
@@ -93,7 +104,7 @@ pub fn prepare_level_render(
     if let PrepareLevelMode::AnnounceLevel = state.prepare_level_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = format! {"LeveL: {}", state.level};
-        let size = 20;
+        let size = juice::text_pulse_size(state, 20, 3.0);
         d.draw_text(
             title.as_str(),
             cursor.x as i32,
@@ -157,7 +168,7 @@ pub fn level_complete_render(
     if let LevelCompleteMode::Announce = state.level_complete_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = MESSAGES_OF_ENCOURAGEMENT[state.level as usize - 1];
-        let size = 20;
+        let size = juice::text_pulse_size(state, 20, 4.0);
         d.draw_text(
             title,
             cursor.x as i32,
@@ -173,7 +184,7 @@ pub fn level_complete_render(
         } else {
             "keep going"
         };
-        let size = 20;
+        let size = juice::text_pulse_size(state, 20, 4.0);
         d.draw_text(
             title,
             cursor.x as i32,
@@ -191,7 +202,7 @@ pub fn win_game_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<Ray
     if let WinGameMode::Announce = state.win_game_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = "you did it";
-        let size = 20;
+        let size = juice::text_pulse_size(state, 20, 4.0);
         d.draw_text(
             title,
             cursor.x as i32,
@@ -203,7 +214,7 @@ pub fn win_game_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<Ray
     } else if let WinGameMode::Announce2 = state.win_game_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = "see you soon";
-        let size = 20;
+        let size = juice::text_pulse_size(state, 20, 4.0);
         d.draw_text(
             title,
             cursor.x as i32,
@@ -221,7 +232,7 @@ pub fn game_over_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<Ra
     if let GameOverMode::Announce = state.game_over_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = "too bad";
-        let size = 20;
+        let size = juice::text_pulse_size(state, 20, 4.0);
         d.draw_text(
             title,
             cursor.x as i32,
@@ -233,7 +244,7 @@ pub fn game_over_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<Ra
     } else if let GameOverMode::Announce2 = state.game_over_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = "try again?";
-        let size = 20;
+        let size = juice::text_pulse_size(state, 20, 4.0);
         d.draw_text(
             title,
             cursor.x as i32,

@@ -1,11 +1,13 @@
 use glam::Vec2;
 use hecs::World;
+use raylib::prelude::Color;
 
 use crate::audio_playing::AudioCommand;
 use crate::components::{
     AttachedTo, Ball, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock,
 };
 use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
+use crate::juice;
 use crate::powerups::maybe_spawn_powerup_drop;
 use crate::state::{DeletionEvent, State, FRAMES_PER_SECOND};
 use crate::DIMS;
@@ -41,6 +43,13 @@ fn rect_for(transform: &CTransform, shape: &Shape) -> Rect {
         pos: transform.pos,
         dims: shape.dims,
     }
+}
+
+fn bounce_feedback(ecs: &mut World, state: &mut State, pos: Vec2, color: Color) {
+    juice::add_hitstop(state, 1);
+    juice::add_camera_shake(state, 0.6);
+    juice::pulse_ball(state, 0.4);
+    juice::spawn_hit_particles(ecs, pos, color, 4, 16.0);
 }
 
 fn resolve_rect_collision(ball_rect: Rect, previous_rect: Rect, other_rect: Rect) -> (Vec2, bool) {
@@ -183,6 +192,7 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                 ball_rect.pos.x = 0.0;
                 next_pos.x = 0.0;
                 next_vel.x = next_vel.x.abs();
+                bounce_feedback(ecs, state, next_pos + ball_dims * 0.5, Color::WHITE);
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
@@ -190,6 +200,7 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                 ball_rect.pos.x = DIMS.x as f32 - 1.0 - ball_rect.dims.x;
                 next_pos.x = ball_rect.pos.x;
                 next_vel.x = -next_vel.x.abs();
+                bounce_feedback(ecs, state, next_pos + ball_dims * 0.5, Color::WHITE);
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
@@ -199,10 +210,16 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                 ball_rect.pos.y = 0.0;
                 next_pos.y = 0.0;
                 next_vel.y = next_vel.y.abs();
+                bounce_feedback(ecs, state, next_pos + ball_dims * 0.5, Color::WHITE);
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
             } else if ball_rect.bottom() >= DIMS.y as f32 - 1.0 {
+                juice::add_hitstop(state, 5);
+                juice::add_camera_shake(state, 2.0);
+                juice::add_zoom_pulse(state, 0.015);
+                juice::add_screen_flash(state, 0.18);
+                juice::spawn_hit_particles(ecs, next_pos + ball_dims * 0.5, Color::RED, 10, 26.0);
                 state.audio_command_buffer.push(AudioCommand::BallDrop);
                 state.deletion_events.push(DeletionEvent::Entity {
                     entity: ball_entity,
@@ -252,6 +269,17 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                         }
                     }
 
+                    juice::add_hitstop(state, 1);
+                    juice::add_camera_shake(state, 0.8);
+                    juice::pulse_paddle(state, 0.7, 1.25);
+                    juice::pulse_ball(state, 0.35);
+                    juice::spawn_hit_particles(
+                        ecs,
+                        next_pos + ball_dims * 0.5,
+                        Color::RAYWHITE,
+                        5,
+                        18.0,
+                    );
                     state
                         .audio_command_buffer
                         .push(AudioCommand::BallPaddleBounce);
@@ -292,18 +320,38 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
 
                 if strong_block {
                     state.score = state.score.saturating_add(5);
+                    juice::add_hitstop(state, 1);
+                    juice::add_camera_shake(state, 0.7);
+                    juice::pulse_ball(state, 0.3);
+                    juice::spawn_hit_particles(
+                        ecs,
+                        block_rect.pos + block_rect.dims * 0.5,
+                        Color::GRAY,
+                        4,
+                        14.0,
+                    );
                     state
                         .audio_command_buffer
                         .push(AudioCommand::BallSturdyBlockBounce);
-                } else if let Ok((_block, health)) =
+                } else if let Ok((block, health)) =
                     ecs.query_one_mut::<(&Block, &mut Health)>(block_entity)
                 {
+                    let block_color = block.color;
                     state.score = state.score.saturating_add(10);
                     if health.hp > 0 {
                         health.hp -= 1;
                     }
                     if health.hp == 0 {
                         state.score = state.score.saturating_add(90);
+                        let hit_pos = block_rect.pos + block_rect.dims * 0.5;
+                        let _ = health;
+                        let _ = block;
+                        juice::add_hitstop(state, 3);
+                        juice::add_camera_shake(state, 1.6);
+                        juice::add_zoom_pulse(state, 0.02);
+                        juice::add_screen_flash(state, 0.12);
+                        juice::pulse_ball(state, 0.5);
+                        juice::spawn_hit_particles(ecs, hit_pos, block_color, 10, 24.0);
                         maybe_spawn_powerup_drop(
                             ecs,
                             state,
@@ -316,6 +364,13 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                             entity: block_entity,
                         });
                     } else {
+                        let hit_pos = block_rect.pos + block_rect.dims * 0.5;
+                        let _ = health;
+                        let _ = block;
+                        juice::add_hitstop(state, 1);
+                        juice::add_camera_shake(state, 0.65);
+                        juice::pulse_ball(state, 0.3);
+                        juice::spawn_hit_particles(ecs, hit_pos, block_color, 5, 16.0);
                         state
                             .audio_command_buffer
                             .push(AudioCommand::BallSturdyBlockBounce);

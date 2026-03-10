@@ -1,6 +1,7 @@
 use glam::Vec2;
 use hecs::World;
 use rand::RngExt;
+use raylib::prelude::Color;
 
 use crate::{
     audio_playing::AudioCommand,
@@ -9,6 +10,7 @@ use crate::{
         PowerUpType, Shape, StrongBlock,
     },
     entity_archetypes::{spawn_ball, spawn_laser_shot, spawn_powerup_drop},
+    juice,
     state::{DeletionEvent, State, FRAMES_PER_SECOND},
     DIMS,
 };
@@ -132,6 +134,17 @@ fn apply_powerup(ecs: &mut World, state: &mut State, power_up_type: PowerUpType)
     }
 
     state.score = state.score.saturating_add(25);
+    juice::add_hitstop(state, 2);
+    juice::add_camera_shake(state, 0.8);
+    juice::add_zoom_pulse(state, 0.01);
+    juice::add_screen_flash(state, 0.1);
+    juice::spawn_hit_particles(
+        ecs,
+        Vec2::new(DIMS.x as f32 * 0.5, DIMS.y as f32 * 0.82),
+        Color::GOLD,
+        8,
+        18.0,
+    );
     state.audio_command_buffer.push(AudioCommand::PowerUpCatch);
 }
 
@@ -255,6 +268,9 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
 
         if ecs.satisfies::<&StrongBlock>(block_entity) {
             state.score = state.score.saturating_add(5);
+            juice::add_hitstop(state, 1);
+            juice::add_camera_shake(state, 0.6);
+            juice::spawn_hit_particles(ecs, block_pos + Vec2::new(6.0, 4.0), Color::GRAY, 4, 14.0);
             state
                 .audio_command_buffer
                 .push(AudioCommand::BallSturdyBlockBounce);
@@ -262,8 +278,10 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
         }
 
         let mut destroyed = false;
-        if let Ok((_block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(block_entity) {
+        let mut block_color = Color::RAYWHITE;
+        if let Ok((block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(block_entity) {
             state.score = state.score.saturating_add(10);
+            block_color = block.color;
             if health.hp > 0 {
                 health.hp -= 1;
             }
@@ -272,6 +290,11 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
 
         if destroyed {
             state.score = state.score.saturating_add(90);
+            juice::add_hitstop(state, 2);
+            juice::add_camera_shake(state, 1.2);
+            juice::add_zoom_pulse(state, 0.015);
+            juice::add_screen_flash(state, 0.08);
+            juice::spawn_hit_particles(ecs, block_pos + Vec2::new(6.0, 4.0), block_color, 8, 20.0);
             maybe_spawn_powerup_drop(ecs, state, block_pos + Vec2::new(6.0, 4.0));
             state.deletion_events.push(DeletionEvent::Entity {
                 entity: block_entity,
@@ -280,6 +303,9 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
                 .audio_command_buffer
                 .push(AudioCommand::BallBlockBounce);
         } else {
+            juice::add_hitstop(state, 1);
+            juice::add_camera_shake(state, 0.55);
+            juice::spawn_hit_particles(ecs, block_pos + Vec2::new(6.0, 4.0), block_color, 4, 14.0);
             state
                 .audio_command_buffer
                 .push(AudioCommand::BallSturdyBlockBounce);

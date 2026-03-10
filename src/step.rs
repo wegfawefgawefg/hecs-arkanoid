@@ -7,12 +7,17 @@ use crate::{
     cleanup,
     components::Paddle,
     entity_archetypes::spawn_ball,
-    gameplay_input, level_rules, physics, powerups,
+    gameplay_input, juice, level_rules, particles, physics, powerups,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     DIMS, TS_RATIO, WINDOW_DIMS,
 };
 
 pub fn step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
+    juice::update(state);
+    if juice::consume_hitstop(state) {
+        return;
+    }
+
     match state.game_mode {
         GameMode::Title => {
             title_step(state, ecs);
@@ -106,6 +111,7 @@ pub fn playing_step(state: &mut State, ecs: &mut World) {
     physics::step_physics(ecs, state);
     physics::respond_to_collisions(ecs, state);
     powerups::post_physics(ecs, state);
+    particles::step(ecs, state);
     cleanup::process_deletion_events(ecs, state);
     level_rules::check_for_level_complete(ecs, state);
     level_rules::check_for_level_lost(ecs, state);

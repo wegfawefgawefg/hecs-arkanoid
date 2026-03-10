@@ -1,6 +1,7 @@
 use crate::{
     audio_playing::AudioCommand,
     components::{Ball, Block, StrongBlock},
+    juice,
     state::{GameMode, State, FRAMES_PER_SECOND},
 };
 use hecs::World;
@@ -16,6 +17,10 @@ pub fn check_for_level_complete(ecs: &World, state: &mut State) {
         state.score = state.score.saturating_add(1_000);
         state.next_game_mode = Some(GameMode::LevelComplete);
         state.audio_command_buffer.push(AudioCommand::LevelWin);
+        juice::add_hitstop(state, 3);
+        juice::add_camera_shake(state, 1.4);
+        juice::add_zoom_pulse(state, 0.025);
+        juice::add_screen_flash(state, 0.12);
         state.near_clear_frames = 0;
         return;
     }
@@ -26,6 +31,10 @@ pub fn check_for_level_complete(ecs: &World, state: &mut State) {
             state.score = state.score.saturating_add(500);
             state.next_game_mode = Some(GameMode::LevelComplete);
             state.audio_command_buffer.push(AudioCommand::LevelWin);
+            juice::add_hitstop(state, 2);
+            juice::add_camera_shake(state, 1.0);
+            juice::add_zoom_pulse(state, 0.015);
+            juice::add_screen_flash(state, 0.08);
             state.near_clear_frames = 0;
         }
     } else {
@@ -36,6 +45,10 @@ pub fn check_for_level_complete(ecs: &World, state: &mut State) {
 pub fn check_for_level_lost(ecs: &World, state: &mut State) {
     if ecs.query::<&Ball>().iter().next().is_none() {
         state.score = state.score.saturating_sub(250);
+        juice::add_hitstop(state, 5);
+        juice::add_camera_shake(state, 2.0);
+        juice::add_zoom_pulse(state, 0.02);
+        juice::add_screen_flash(state, 0.16);
         if state.lives > 1 {
             state.lives -= 1;
             state.reset_powerup_state();

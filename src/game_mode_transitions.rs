@@ -5,7 +5,7 @@ use raylib::prelude::Color;
 use crate::{
     components::Block,
     entity_archetypes::{spawn_block, spawn_paddle, spawn_walls},
-    level_data,
+    juice, level_data,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     DIMS, TS_RATIO,
 };
@@ -55,6 +55,9 @@ pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
     let _player = spawn_paddle(ecs, player_pos, BASE_PADDLE_SHAPE, Color::WHITE);
 
     spawn_level(ecs, state.level);
+    juice::add_camera_shake(state, 0.8);
+    juice::add_zoom_pulse(state, 0.015);
+    juice::add_screen_flash(state, 0.08);
 }
 
 pub const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 30.0, y: 8.0 };
@@ -68,16 +71,28 @@ pub fn level_complete_init_state(_ecs: &mut World, state: &mut State) {
     }
     state.level_complete_state.mode = LevelCompleteMode::Announce;
     state.level_complete_state.countdown = (60.0 * TS_RATIO) as u32;
+    juice::add_hitstop(state, 3);
+    juice::add_camera_shake(state, 1.5);
+    juice::add_zoom_pulse(state, 0.025);
+    juice::add_screen_flash(state, 0.12);
 }
 
 pub fn win_game_init_state(_ecs: &mut World, state: &mut State) {
     state.win_game_state.mode = WinGameMode::Announce;
     state.win_game_state.countdown = (60.0 * TS_RATIO) as u32;
+    juice::add_hitstop(state, 4);
+    juice::add_camera_shake(state, 2.0);
+    juice::add_zoom_pulse(state, 0.03);
+    juice::add_screen_flash(state, 0.16);
 }
 
 pub fn game_over_init_state(_ecs: &mut World, state: &mut State) {
     state.game_over_state.mode = GameOverMode::Announce;
     state.game_over_state.countdown = (60.0 * TS_RATIO) as u32;
+    juice::add_hitstop(state, 5);
+    juice::add_camera_shake(state, 2.2);
+    juice::add_zoom_pulse(state, 0.03);
+    juice::add_screen_flash(state, 0.18);
 }
 
 pub fn delete_all_blocks(ecs: &mut World) {

@@ -51,6 +51,13 @@ pub struct State {
     pub fireball_mode: bool,
     pub laser_cooldown: u32,
     pub powerup_dry_streak: u32,
+    pub hitstop_frames: u32,
+    pub camera_shake: f32,
+    pub camera_zoom_pulse: f32,
+    pub screen_flash: f32,
+    pub paddle_pulse: f32,
+    pub ball_pulse: f32,
+    pub paddle_recoil: f32,
 
     pub deletion_events: Vec<DeletionEvent>,
 }
@@ -118,6 +125,13 @@ impl State {
             fireball_mode: false,
             laser_cooldown: 0,
             powerup_dry_streak: 0,
+            hitstop_frames: 0,
+            camera_shake: 0.0,
+            camera_zoom_pulse: 0.0,
+            screen_flash: 0.0,
+            paddle_pulse: 0.0,
+            ball_pulse: 0.0,
+            paddle_recoil: 0.0,
 
             deletion_events,
         }
@@ -139,6 +153,13 @@ impl State {
         self.laser_mode = false;
         self.fireball_mode = false;
         self.laser_cooldown = 0;
+        self.hitstop_frames = 0;
+        self.camera_shake = 0.0;
+        self.camera_zoom_pulse = 0.0;
+        self.screen_flash = 0.0;
+        self.paddle_pulse = 0.0;
+        self.ball_pulse = 0.0;
+        self.paddle_recoil = 0.0;
     }
 }
 

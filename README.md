@@ -9,6 +9,7 @@ A cleanup and dependency refresh pass happened on March 10, 2026 so it builds ag
 ## Docs
 
 - [Powerups And Run Rules](docs/powerups.md)
+- [Juice Pass Plan](docs/juice.md)
 
 ## resource
 http://nick-aschenbach.github.io/blog/2015/04/27/arkanoid-game-levels/
