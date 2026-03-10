@@ -303,7 +303,6 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
             juice::add_hitstop(state, 2);
             juice::add_camera_shake(state, 1.2);
             juice::add_zoom_pulse(state, 0.015);
-            juice::add_screen_flash(state, 0.08);
             juice::spawn_hit_particles(ecs, hit_pos, block_color, 8, 20.0);
             maybe_spawn_powerup_drop(ecs, state, hit_pos);
             state.deletion_events.push(DeletionEvent::Entity {

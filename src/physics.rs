@@ -357,7 +357,6 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                         juice::add_hitstop(state, 3);
                         juice::add_camera_shake(state, 1.6);
                         juice::add_zoom_pulse(state, 0.02);
-                        juice::add_screen_flash(state, 0.12);
                         juice::pulse_ball(state, 0.5);
                         juice::spawn_hit_particles(ecs, hit_pos, block_color, 10, 24.0);
                         maybe_spawn_powerup_drop(

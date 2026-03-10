@@ -85,6 +85,9 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     if rl.is_key_down(raylib::consts::KeyboardKey::KEY_R) {
         inputs.restart_level = true;
     }
+    if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_N) {
+        inputs.next_level = true;
+    }
 
     // advance level up and down if right or left arrow key is pressed
     // if rl.is_key_down(raylib::consts::KeyboardKey::KEY_RIGHT) && state.level < 35 {
