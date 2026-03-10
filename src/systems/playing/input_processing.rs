@@ -21,14 +21,14 @@ pub fn process_inputs(ecs: &mut World, state: &mut State) {
     if state.playing_inputs.next_level {
         state.level += 1;
         state.level_change_delay = LEVEL_CHANGE_DELAY_DEFAULT;
-        spawn_level(ecs, state, state.level);
+        spawn_level(ecs, state.level);
     } else if state.playing_inputs.previous_level {
         if state.level == 1 {
             return;
         }
         state.level -= 1;
         state.level_change_delay = LEVEL_CHANGE_DELAY_DEFAULT;
-        spawn_level(ecs, state, state.level);
+        spawn_level(ecs, state.level);
     }
 
     if state.playing_inputs.restart_level {

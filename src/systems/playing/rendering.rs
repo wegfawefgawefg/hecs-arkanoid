@@ -1,13 +1,11 @@
 use glam::Vec2;
 use hecs::World;
-use rapier2d::prelude::*;
 use raylib::prelude::Color;
 
 use crate::{
     components::{
         Ball, BallEater, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock, Wall,
     },
-    physics_engine::m2p,
     render_commands::RenderCommand,
     state::State,
     DIMS,
@@ -92,41 +90,4 @@ pub fn render(ecs: &World, state: &mut State) {
 }
 
 #[allow(dead_code)]
-pub fn render_physics(state: &mut State) {
-    // Render colliders
-    for (_, collider) in state.physics.collider_set.iter() {
-        let center = collider.translation();
-        let shape = collider.shape();
-        let shape_type = shape.shape_type();
-
-        if let ShapeType::Cuboid = shape_type {
-            let cuboid = shape.as_cuboid().unwrap();
-            let tl = center + -cuboid.half_extents;
-            let size = cuboid.half_extents * 2.0;
-
-            let ppos = Vec2::new(m2p(tl.x), m2p(tl.y));
-            let psize = Vec2::new(m2p(size.x), m2p(size.y));
-            state.render_command_buffer.push(RenderCommand::Block {
-                pos: ppos,
-                dims: psize,
-                color: Color::RED, // or any color you prefer for debug
-                hp: 1,
-                ball_unbreakable: false,
-            });
-        }
-    }
-
-    // Render rigid bodies (Optional, if you need to distinguish them)
-    for (_, rigid_body) in state.physics.rigid_body_set.iter() {
-        let pos = rigid_body.translation();
-        let rot = rigid_body.rotation().angle();
-
-        let ppos = Vec2::new(m2p(pos.x), m2p(pos.y));
-        let prot = Vec2::new(rot.cos(), rot.sin());
-        state.render_command_buffer.push(RenderCommand::Line {
-            start: ppos,
-            end: ppos + prot * 10.0,
-            color: Color::GREEN, // or any color you prefer for debug
-        });
-    }
-}
+pub fn render_physics(_state: &mut State) {}

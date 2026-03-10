@@ -2,142 +2,84 @@ use glam::Vec2;
 use hecs::World;
 
 use crate::audio_playing::AudioCommand;
-use crate::components::{
-    Ball, BallEater, Block, CTransform, FreeToLeavePlayField, HasRigidBody, Health, Paddle,
-    Physics, PositionManaged, Shape, StrongBlock, VelocityManaged, Wall,
-};
+use crate::components::{Ball, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock};
 use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
-use crate::physics_engine::{m2p, p2m};
-use crate::state::{DeletionEvent, State};
-use crate::{DIMS, TS_RATIO};
+use crate::state::{DeletionEvent, State, FRAMES_PER_SECOND};
+use crate::DIMS;
 
-pub fn sync_ecs_to_physics(ecs: &World, state: &mut State) {
-    for (entity, physics) in ecs
-        .query::<(hecs::Entity, &mut Physics)>()
-        .with::<(&HasRigidBody, &VelocityManaged)>()
-        .iter()
-    {
-        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-            if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
-                let vel = Vec2::new(p2m(physics.vel.x), p2m(physics.vel.y));
-                rigid_body.set_linvel(vel, true);
-            }
-        }
+const BALL_SPEED: f32 = 100.0;
+const PHYSICS_SUBSTEPS: usize = 4;
+
+#[derive(Clone, Copy)]
+struct Rect {
+    pos: Vec2,
+    dims: Vec2,
+}
+
+impl Rect {
+    fn right(self) -> f32 {
+        self.pos.x + self.dims.x
     }
 
-    for (entity, ctransform, shape) in ecs
-        .query::<(hecs::Entity, &CTransform, &Shape)>()
-        .with::<(&HasRigidBody, &PositionManaged)>()
-        .iter()
-    {
-        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-            if let Some(rigid_body) = state.physics.rigid_body_set.get_mut(body) {
-                let center = ctransform.pos + shape.dims / 2.0;
-                rigid_body.set_translation(Vec2::new(p2m(center.x), p2m(center.y)), true);
-            }
-        }
+    fn bottom(self) -> f32 {
+        self.pos.y + self.dims.y
+    }
+
+    fn overlaps(self, other: Self) -> bool {
+        self.pos.x < other.right()
+            && self.right() > other.pos.x
+            && self.pos.y < other.bottom()
+            && self.bottom() > other.pos.y
     }
 }
 
-const ANGLE_45_IN_RAD: f32 = std::f32::consts::PI / 3.0;
-const BALL_VEL: f32 = 200.0 * (1.0 / TS_RATIO);
-
-pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
-    for (entity, physics) in ecs
-        .query::<(hecs::Entity, &mut Physics)>()
-        .with::<(&HasRigidBody, &Ball)>()
-        .iter()
-    {
-        if state.physics.get_rigid_body_handle(entity).is_some() {
-            let x_sign = physics.vel.x.signum();
-            let y_sign = physics.vel.y.signum();
-            physics.vel.x = ANGLE_45_IN_RAD.cos() * BALL_VEL * x_sign;
-            physics.vel.y = ANGLE_45_IN_RAD.sin() * BALL_VEL * y_sign;
-        }
+fn rect_for(transform: &CTransform, shape: &Shape) -> Rect {
+    Rect {
+        pos: transform.pos,
+        dims: shape.dims,
     }
 }
 
-pub fn step_physics(ecs: &World, state: &mut State) {
-    state.physics.step();
+fn resolve_rect_collision(ball_rect: Rect, previous_rect: Rect, other_rect: Rect) -> (Vec2, bool) {
+    let mut corrected_pos = ball_rect.pos;
+    let mut hit_horizontal = false;
 
-    for (entity, ctransform, shape) in ecs
-        .query::<(hecs::Entity, &mut CTransform, &Shape)>()
-        .with::<&HasRigidBody>()
-        .without::<&PositionManaged>()
-        .iter()
-    {
-        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-            if let Some(rigid_body) = state.physics.rigid_body_set.get(body) {
-                let center = rigid_body.translation();
-                let rot = rigid_body.rotation().angle();
-                ctransform.pos = Vec2::new(
-                    m2p(center.x) - shape.dims.x / 2.0,
-                    m2p(center.y) - shape.dims.y / 2.0,
-                );
-                ctransform.rot = Vec2::new(rot.cos(), rot.sin());
-            }
+    if previous_rect.bottom() <= other_rect.pos.y {
+        corrected_pos.y = other_rect.pos.y - ball_rect.dims.y;
+    } else if previous_rect.pos.y >= other_rect.bottom() {
+        corrected_pos.y = other_rect.bottom();
+    } else if previous_rect.right() <= other_rect.pos.x {
+        corrected_pos.x = other_rect.pos.x - ball_rect.dims.x;
+        hit_horizontal = true;
+    } else if previous_rect.pos.x >= other_rect.right() {
+        corrected_pos.x = other_rect.right();
+        hit_horizontal = true;
+    } else {
+        let overlap_left = ball_rect.right() - other_rect.pos.x;
+        let overlap_right = other_rect.right() - ball_rect.pos.x;
+        let overlap_top = ball_rect.bottom() - other_rect.pos.y;
+        let overlap_bottom = other_rect.bottom() - ball_rect.pos.y;
+
+        let min_x = overlap_left.min(overlap_right);
+        let min_y = overlap_top.min(overlap_bottom);
+
+        if min_x < min_y {
+            hit_horizontal = true;
+            corrected_pos.x = if overlap_left < overlap_right {
+                other_rect.pos.x - ball_rect.dims.x
+            } else {
+                other_rect.right()
+            };
+        } else {
+            corrected_pos.y = if overlap_top < overlap_bottom {
+                other_rect.pos.y - ball_rect.dims.y
+            } else {
+                other_rect.bottom()
+            };
         }
     }
 
-    for (entity, physics) in ecs
-        .query::<(hecs::Entity, &mut Physics)>()
-        .with::<&HasRigidBody>()
-        .iter()
-    {
-        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-            if let Some(rigid_body) = state.physics.rigid_body_set.get(body) {
-                let vel = rigid_body.linvel();
-                physics.vel = Vec2::new(m2p(vel.x), m2p(vel.y));
-            }
-        }
-    }
-
-    for (entity, ctransform, shape) in ecs
-        .query::<(hecs::Entity, &mut CTransform, &Shape)>()
-        .with::<&Paddle>()
-        .iter()
-    {
-        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-            if let Some(rigid_body) = state.physics.rigid_body_set.get(body) {
-                let center = rigid_body.translation();
-                ctransform.pos.x = m2p(center.x) - shape.dims.x / 2.0;
-                ctransform.pos.y = m2p(center.y) - shape.dims.y / 2.0;
-            }
-        }
-    }
-
-    state.physics.collision_events.clear();
-    while let Ok(event) = state.physics.collision_recv.try_recv() {
-        state.physics.collision_events.push(event);
-    }
-}
-
-#[allow(dead_code)]
-pub fn constantly_resize_paddle(ecs: &mut World, state: &mut State) {
-    let new_shape = Vec2::new(
-        BASE_PADDLE_SHAPE.x * (1.0 + (state.t * 0.1).sin() / 2.0) + 10.0,
-        BASE_PADDLE_SHAPE.y,
-    );
-    for (entity, shape) in ecs
-        .query::<(hecs::Entity, &mut Shape)>()
-        .with::<&Paddle>()
-        .iter()
-    {
-        shape.dims = new_shape;
-
-        if let Some(body) = state.physics.get_rigid_body_handle(entity) {
-            if let Some(rigid_body) = state.physics.rigid_body_set.get(body) {
-                for collider_handle in rigid_body.colliders() {
-                    if let Some(collider) = state.physics.collider_set.get_mut(*collider_handle) {
-                        collider.set_shape(rapier2d::geometry::ColliderShape::cuboid(
-                            p2m(new_shape.x / 2.0),
-                            p2m(new_shape.y / 2.0),
-                        ));
-                    }
-                }
-            }
-        }
-    }
+    (corrected_pos, hit_horizontal)
 }
 
 fn ball_hits_paddle_side(
@@ -154,196 +96,198 @@ fn ball_hits_paddle_side(
     let (_, ball_transform, ball_shape) = ball_query.get().ok()?;
     let ball_center = ball_transform.pos.x + ball_shape.dims.x / 2.0;
 
-    let paddle_left_third_end = paddle_start + (paddle_end - paddle_start) / 3.0;
-    if ball_center > paddle_start && ball_center < paddle_left_third_end {
+    let left_third_end = paddle_start + (paddle_end - paddle_start) / 3.0;
+    if ball_center > paddle_start && ball_center < left_third_end {
         return Some(-1.0);
     }
 
-    let paddle_right_third_start = paddle_end - (paddle_end - paddle_start) / 3.0;
-    if ball_center > paddle_right_third_start && ball_center < paddle_end {
+    let right_third_start = paddle_end - (paddle_end - paddle_start) / 3.0;
+    if ball_center > right_third_start && ball_center < paddle_end {
         return Some(1.0);
     }
 
     None
 }
 
-fn damage_block(
-    ecs: &mut World,
-    state: &mut State,
-    block_entity: hecs::Entity,
-    destroy_sound: AudioCommand,
-    sturdy_sound: AudioCommand,
-) -> bool {
-    if let Ok((_block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(block_entity) {
-        match health.hp {
-            0 => {}
-            1 => {
-                health.hp -= 1;
-                state.audio_command_buffer.push(destroy_sound);
-                state.deletion_events.push(DeletionEvent::Entity {
-                    entity: block_entity,
-                });
-                state.deletion_events.push(DeletionEvent::Physics {
-                    entity: block_entity,
-                });
-                return true;
-            }
-            _ => {
-                health.hp -= 1;
-                state.audio_command_buffer.push(sturdy_sound);
-                return true;
-            }
-        }
-    }
+pub fn sync_ecs_to_physics(_ecs: &World, _state: &mut State) {}
 
-    false
+pub fn set_ball_to_angle(ecs: &World, _state: &mut State) {
+    for physics in ecs.query::<&mut Physics>().with::<&Ball>().iter() {
+        let x_sign = if physics.vel.x == 0.0 {
+            1.0
+        } else {
+            physics.vel.x.signum()
+        };
+        let y_sign = if physics.vel.y == 0.0 {
+            -1.0
+        } else {
+            physics.vel.y.signum()
+        };
+        let angle = std::f32::consts::PI / 3.0;
+        physics.vel.x = angle.cos() * BALL_SPEED * x_sign;
+        physics.vel.y = angle.sin() * BALL_SPEED * y_sign;
+    }
 }
 
-pub fn respond_to_collisions(ecs: &mut World, state: &mut State) {
-    let collision_events = state.physics.collision_events.clone();
-    for event in collision_events {
-        if event.started() {
-            continue;
-        }
+pub fn step_physics(ecs: &mut World, state: &mut State) {
+    let dt = 1.0 / FRAMES_PER_SECOND as f32 / PHYSICS_SUBSTEPS as f32;
+    let paddle = ecs
+        .query::<(hecs::Entity, &Paddle, &CTransform, &Shape)>()
+        .iter()
+        .next()
+        .map(|(entity, _, transform, shape)| (entity, rect_for(transform, shape)));
 
-        let entity_a = state
-            .physics
-            .collider_set
-            .get(event.collider1())
-            .and_then(|collider| collider.parent())
-            .and_then(|body| state.physics.get_entity_from_rigid_body_handle(body));
+    let ball_entities: Vec<_> = ecs
+        .query::<(hecs::Entity, &Ball)>()
+        .iter()
+        .map(|(entity, _)| entity)
+        .collect();
 
-        let entity_b = state
-            .physics
-            .collider_set
-            .get(event.collider2())
-            .and_then(|collider| collider.parent())
-            .and_then(|body| state.physics.get_entity_from_rigid_body_handle(body));
+    for ball_entity in ball_entities {
+        let mut dropped = false;
 
-        let (Some(entity_a), Some(entity_b)) = (entity_a, entity_b) else {
-            continue;
-        };
+        for _ in 0..PHYSICS_SUBSTEPS {
+            let Ok((ball_transform, ball_physics, ball_shape)) =
+                ecs.query_one_mut::<(&CTransform, &Physics, &Shape)>(ball_entity)
+            else {
+                break;
+            };
 
-        if ecs.satisfies::<&Ball>(entity_a) {
-            if ecs.satisfies::<(&Block, &StrongBlock)>(entity_b) {
-                state
-                    .audio_command_buffer
-                    .push(AudioCommand::BallBlockBounce);
-                continue;
-            }
+            let mut next_pos = ball_transform.pos + ball_physics.vel * dt;
+            let mut next_vel = ball_physics.vel;
+            let previous_rect = rect_for(ball_transform, ball_shape);
+            let mut ball_rect = Rect {
+                pos: next_pos,
+                dims: ball_shape.dims,
+            };
 
-            if damage_block(
-                ecs,
-                state,
-                entity_b,
-                AudioCommand::BallBlockBounce,
-                AudioCommand::BallSturdyBlockBounce,
-            ) {
-                continue;
-            }
-
-            if ecs.satisfies::<&Paddle>(entity_b) {
-                state
-                    .audio_command_buffer
-                    .push(AudioCommand::BallPaddleBounce);
-                if let Some(new_direction) = ball_hits_paddle_side(ecs, entity_a, entity_b) {
-                    if let Ok((_, physics)) = ecs.query_one_mut::<(&Ball, &mut Physics)>(entity_a) {
-                        physics.vel.x = BALL_VEL * new_direction;
-                        physics.vel.y = -BALL_VEL;
-                    }
-                }
-                continue;
-            }
-
-            if ecs.satisfies::<&BallEater>(entity_b) {
-                state.audio_command_buffer.push(AudioCommand::BallDrop);
-                state
-                    .deletion_events
-                    .push(DeletionEvent::Entity { entity: entity_a });
-                state
-                    .deletion_events
-                    .push(DeletionEvent::Physics { entity: entity_a });
-                continue;
-            }
-
-            if ecs.satisfies::<&Wall>(entity_b) {
+            if ball_rect.pos.x <= 0.0 {
+                ball_rect.pos.x = 0.0;
+                next_pos.x = 0.0;
+                next_vel.x = next_vel.x.abs();
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
-                continue;
-            }
-        }
-
-        if ecs.satisfies::<&Ball>(entity_b) {
-            if ecs.satisfies::<(&Block, &StrongBlock)>(entity_a) {
-                state
-                    .audio_command_buffer
-                    .push(AudioCommand::BallBlockBounce);
-                continue;
-            }
-
-            if damage_block(
-                ecs,
-                state,
-                entity_a,
-                AudioCommand::BallBlockBounce,
-                AudioCommand::BallSturdyBlockBounce,
-            ) {
-                continue;
-            }
-
-            if ecs.satisfies::<&Paddle>(entity_a) {
-                state
-                    .audio_command_buffer
-                    .push(AudioCommand::BallPaddleBounce);
-                if let Some(new_direction) = ball_hits_paddle_side(ecs, entity_b, entity_a) {
-                    if let Ok((_, physics)) = ecs.query_one_mut::<(&Ball, &mut Physics)>(entity_b) {
-                        physics.vel.x = BALL_VEL * new_direction;
-                        physics.vel.y = -BALL_VEL;
-                    }
-                }
-                continue;
-            }
-
-            if ecs.satisfies::<&BallEater>(entity_a) {
-                state.audio_command_buffer.push(AudioCommand::BallDrop);
-                state
-                    .deletion_events
-                    .push(DeletionEvent::Entity { entity: entity_b });
-                state
-                    .deletion_events
-                    .push(DeletionEvent::Physics { entity: entity_b });
-                continue;
-            }
-
-            if ecs.satisfies::<&Wall>(entity_a) {
+            } else if ball_rect.right() >= DIMS.x as f32 - 1.0 {
+                ball_rect.pos.x = DIMS.x as f32 - 1.0 - ball_rect.dims.x;
+                next_pos.x = ball_rect.pos.x;
+                next_vel.x = -next_vel.x.abs();
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
             }
+
+            if ball_rect.pos.y <= 0.0 {
+                ball_rect.pos.y = 0.0;
+                next_pos.y = 0.0;
+                next_vel.y = next_vel.y.abs();
+                state
+                    .audio_command_buffer
+                    .push(AudioCommand::BallWallBounce);
+            } else if ball_rect.bottom() >= DIMS.y as f32 - 1.0 {
+                state.audio_command_buffer.push(AudioCommand::BallDrop);
+                state.deletion_events.push(DeletionEvent::Entity {
+                    entity: ball_entity,
+                });
+                dropped = true;
+                break;
+            }
+
+            if let Some((paddle_entity, paddle_rect)) = paddle {
+                if ball_rect.overlaps(paddle_rect) && next_vel.y > 0.0 {
+                    next_pos.y = paddle_rect.pos.y - ball_rect.dims.y;
+                    next_vel.y = -next_vel.y.abs();
+                    if let Some(new_direction) =
+                        ball_hits_paddle_side(ecs, ball_entity, paddle_entity)
+                    {
+                        next_vel.x = BALL_SPEED * new_direction;
+                    }
+                    state
+                        .audio_command_buffer
+                        .push(AudioCommand::BallPaddleBounce);
+                    if let Ok((ball_transform, ball_physics)) =
+                        ecs.query_one_mut::<(&mut CTransform, &mut Physics)>(ball_entity)
+                    {
+                        ball_transform.pos = next_pos;
+                        ball_physics.vel = next_vel;
+                    }
+                    continue;
+                }
+            }
+
+            let mut hit_block = None;
+            for (block_entity, _, block_transform, block_shape) in ecs
+                .query::<(hecs::Entity, &Block, &CTransform, &Shape)>()
+                .iter()
+            {
+                let block_rect = rect_for(block_transform, block_shape);
+                if ball_rect.overlaps(block_rect) {
+                    hit_block = Some((block_entity, block_rect));
+                    break;
+                }
+            }
+
+            if let Some((block_entity, block_rect)) = hit_block {
+                let (corrected_pos, hit_horizontal) =
+                    resolve_rect_collision(ball_rect, previous_rect, block_rect);
+                next_pos = corrected_pos;
+                if hit_horizontal {
+                    next_vel.x = -next_vel.x;
+                } else {
+                    next_vel.y = -next_vel.y;
+                }
+
+                if ecs.satisfies::<&StrongBlock>(block_entity) {
+                    state
+                        .audio_command_buffer
+                        .push(AudioCommand::BallBlockBounce);
+                } else if let Ok((_block, health)) =
+                    ecs.query_one_mut::<(&Block, &mut Health)>(block_entity)
+                {
+                    if health.hp > 0 {
+                        health.hp -= 1;
+                    }
+                    if health.hp == 0 {
+                        state
+                            .audio_command_buffer
+                            .push(AudioCommand::BallBlockBounce);
+                        state.deletion_events.push(DeletionEvent::Entity {
+                            entity: block_entity,
+                        });
+                    } else {
+                        state
+                            .audio_command_buffer
+                            .push(AudioCommand::BallSturdyBlockBounce);
+                    }
+                }
+            }
+
+            if let Ok((ball_transform, ball_physics)) =
+                ecs.query_one_mut::<(&mut CTransform, &mut Physics)>(ball_entity)
+            {
+                ball_transform.pos = next_pos;
+                ball_physics.vel = next_vel;
+            }
+        }
+
+        if dropped {
+            continue;
         }
     }
 }
 
 #[allow(dead_code)]
-pub fn boundary_checking(ecs: &World, _state: &mut State) {
-    for (ctransform, shape) in ecs
-        .query::<(&mut CTransform, &Shape)>()
-        .without::<&FreeToLeavePlayField>()
-        .iter()
-    {
-        if ctransform.pos.x <= 0.0 {
-            ctransform.pos.x = 0.0;
-        }
-        if (ctransform.pos.x + shape.dims.x) >= (DIMS.x as f32 - 1.0) {
-            ctransform.pos.x = DIMS.x as f32 - shape.dims.x - 1.0;
-        }
-
-        if ctransform.pos.y <= 0.0 {
-            ctransform.pos.y = 0.0;
-        }
-        if (ctransform.pos.y + shape.dims.y) >= (DIMS.y as f32 - 1.0) {
-            ctransform.pos.y = DIMS.y as f32 - shape.dims.y - 1.0;
-        }
+pub fn constantly_resize_paddle(ecs: &mut World, state: &mut State) {
+    let new_shape = Vec2::new(
+        BASE_PADDLE_SHAPE.x * (1.0 + (state.t * 0.1).sin() / 2.0) + 10.0,
+        BASE_PADDLE_SHAPE.y,
+    );
+    for shape in ecs.query::<&mut Shape>().with::<&Paddle>().iter() {
+        shape.dims = new_shape;
     }
 }
+
+pub fn respond_to_collisions(_ecs: &mut World, _state: &mut State) {}
+
+#[allow(dead_code)]
+pub fn boundary_checking(_ecs: &World, _state: &mut State) {}

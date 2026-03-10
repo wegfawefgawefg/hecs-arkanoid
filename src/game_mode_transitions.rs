@@ -6,9 +6,8 @@ use crate::{
     components::Block,
     entity_archetypes::{spawn_block, spawn_paddle, spawn_walls},
     level_data,
-    physics_engine::PhysicsEngine,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
-    systems, DIMS, TS_RATIO,
+    DIMS, TS_RATIO,
 };
 
 pub fn transition_game_mode(ecs: &mut World, state: &mut State) {
@@ -47,28 +46,14 @@ pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
     state.prepare_level_state.countdown = (20.0 * TS_RATIO) as u32;
 
     ecs.clear();
-    state.physics = PhysicsEngine::new();
 
-    spawn_walls(ecs, state);
+    spawn_walls(ecs);
 
     // add players paddle
     let player_pos = Vec2::new(DIMS.x as f32 / 2.0, DIMS.y as f32 * 0.9);
-    let _player = spawn_paddle(
-        ecs,
-        state,
-        player_pos,
-        BASE_PADDLE_SHAPE,
-        Color {
-            r: 255,
-            g: 255,
-            b: 255,
-            a: 255,
-        },
-    );
+    let _player = spawn_paddle(ecs, player_pos, BASE_PADDLE_SHAPE, Color::WHITE);
 
-    spawn_level(ecs, state, state.level);
-    systems::playing::physics::sync_ecs_to_physics(ecs, state);
-    systems::playing::physics::step_physics(ecs, state);
+    spawn_level(ecs, state.level);
 }
 
 pub const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 30.0, y: 8.0 };
@@ -94,42 +79,20 @@ pub fn game_over_init_state(_ecs: &mut World, state: &mut State) {
     state.game_over_state.countdown = (60.0 * TS_RATIO) as u32;
 }
 
-pub fn delete_all_blocks(ecs: &mut World, state: &mut State) {
+pub fn delete_all_blocks(ecs: &mut World) {
     let blocks: Vec<_> = ecs
         .query::<(hecs::Entity, &Block)>()
         .iter()
         .map(|(entity, _)| entity)
         .collect();
     for block in blocks {
-        // remove all rigid bodies
-        if let Some(rigid_body_handle) = state.physics.get_rigid_body_handle(block) {
-            state.physics.rigid_body_set.remove(
-                rigid_body_handle,
-                &mut state.physics.island_manager,
-                &mut state.physics.collider_set,
-                &mut state.physics.impulse_joint_set,
-                &mut state.physics.multibody_joint_set,
-                true,
-            );
-        }
-
-        // remove from physics
-        // if let Some(collider_handle) = state.physics.get_collider_handle(block) {
-        //     state.physics.collider_set.remove(
-        //         collider_handle,
-        //         &mut state.physics.island_manager,
-        //         &mut state.physics.rigid_body_set,
-        //         true,
-        //     );
-        // }
-
         let _ = ecs.despawn(block);
     }
     ecs.flush();
 }
 
-pub fn spawn_level(ecs: &mut World, state: &mut State, level: u32) {
-    delete_all_blocks(ecs, state);
+pub fn spawn_level(ecs: &mut World, level: u32) {
+    delete_all_blocks(ecs);
 
     // clamp level between 0 and 35
     let level = level.clamp(1, 36);
@@ -162,7 +125,7 @@ pub fn spawn_level(ecs: &mut World, state: &mut State, level: u32) {
             // hp is either 1 or 2 if color_index is 9
             let hp = if color_index == 9 { 2 } else { 1 };
             let ball_unbreakable = color_index == 10;
-            spawn_block(ecs, state, cursor, BLOCK_SHAPE, color, hp, ball_unbreakable);
+            spawn_block(ecs, cursor, BLOCK_SHAPE, color, hp, ball_unbreakable);
 
             // advance cursor x by block width
             cursor.x += BLOCK_WIDTH;

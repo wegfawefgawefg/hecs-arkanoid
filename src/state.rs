@@ -1,11 +1,9 @@
 use glam::Vec2;
 use hecs::Entity;
-use rand::{rng, rngs::StdRng, SeedableRng};
 
 use crate::{
     audio_playing::AudioCommandBuffer,
     input_processing::{PlayingInputs, TitleInputs},
-    physics_engine::PhysicsEngine,
     render_commands::RenderCommandBuffer,
 };
 
@@ -47,16 +45,11 @@ pub struct State {
     pub level: u32,
     pub level_change_delay: u32,
 
-    pub physics: PhysicsEngine,
-
     pub deletion_events: Vec<DeletionEvent>,
 }
 
 impl State {
     pub fn new() -> Self {
-        let mut seeder = rng();
-        let _rng: StdRng = StdRng::from_rng(&mut seeder);
-
         let game_mode = GameMode::Title;
         let transition_to: Option<GameMode> = None;
 
@@ -83,8 +76,6 @@ impl State {
         let title_inputs = TitleInputs::new();
         let playing_inputs = PlayingInputs::new();
         let mouse_screen_pos = Vec2::ZERO;
-
-        let physics = PhysicsEngine::new();
 
         let deletion_events: Vec<DeletionEvent> = Vec::new();
 
@@ -114,8 +105,6 @@ impl State {
             level: 1,
             level_change_delay: 0,
 
-            physics,
-
             deletion_events,
         }
     }
@@ -123,7 +112,6 @@ impl State {
 
 pub enum DeletionEvent {
     Entity { entity: Entity },
-    Physics { entity: Entity },
 }
 
 pub enum PrepareLevelMode {

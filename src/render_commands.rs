@@ -57,19 +57,40 @@ static RADIUS_VARIATIONS: [f32; SEGMENTS] = [
     0.8, 0.75, 0.9, 0.85, 0.7, 0.88, 0.95, 0.78, 0.92, 0.76, 0.87, 0.8,
 ];
 
+fn draw_rect_outline(
+    d: &mut RaylibTextureMode<RaylibDrawHandle>,
+    pos: Vec2,
+    dims: Vec2,
+    color: Color,
+) {
+    let left = pos.x;
+    let top = pos.y;
+    let right = pos.x + dims.x - 1.0;
+    let bottom = pos.y + dims.y - 1.0;
+
+    d.draw_line_v(Vector2::new(left, top), Vector2::new(right, top), color);
+    d.draw_line_v(
+        Vector2::new(left, bottom),
+        Vector2::new(right, bottom),
+        color,
+    );
+    d.draw_line_v(Vector2::new(left, top), Vector2::new(left, bottom), color);
+    d.draw_line_v(Vector2::new(right, top), Vector2::new(right, bottom), color);
+    d.draw_pixel(left as i32, top as i32, color);
+    d.draw_pixel(right as i32, top as i32, color);
+    d.draw_pixel(left as i32, bottom as i32, color);
+    d.draw_pixel(right as i32, bottom as i32, color);
+}
+
 pub fn execute_render_command_buffer(
     d: &mut RaylibTextureMode<RaylibDrawHandle>,
     render_command_buffer: &RenderCommandBuffer,
 ) {
     for command in render_command_buffer.iter() {
         match command {
-            RenderCommand::Ball { pos, dims } => d.draw_rectangle_lines(
-                pos.x as i32,
-                pos.y as i32,
-                dims.x as i32,
-                dims.y as i32,
-                Color::RAYWHITE,
-            ),
+            RenderCommand::Ball { pos, dims } => {
+                draw_rect_outline(d, *pos, *dims, Color::RAYWHITE);
+            }
             RenderCommand::ColoredSquare { pos, color } => {
                 d.draw_rectangle(pos.x as i32, pos.y as i32, SIZE, SIZE, *color);
             }
@@ -90,29 +111,19 @@ pub fn execute_render_command_buffer(
                     );
                     continue;
                 } else {
-                    d.draw_rectangle_lines(
-                        pos.x as i32,
-                        pos.y as i32,
-                        dims.x as i32,
-                        dims.y as i32,
-                        color,
-                    );
+                    draw_rect_outline(d, *pos, *dims, *color);
                     if *hp > 1 {
                         d.draw_line_v(
                             Vector2::new(pos.x, pos.y),
-                            Vector2::new(pos.x + dims.x - 1.0, pos.y + dims.y),
+                            Vector2::new(pos.x + dims.x - 1.0, pos.y + dims.y - 1.0),
                             *color,
                         );
                     }
                 }
             }
-            RenderCommand::Paddle { pos, dims, color } => d.draw_rectangle_lines(
-                pos.x as i32,
-                pos.y as i32,
-                dims.x as i32,
-                dims.y as i32,
-                color,
-            ),
+            RenderCommand::Paddle { pos, dims, color } => {
+                draw_rect_outline(d, *pos, *dims, *color);
+            }
             RenderCommand::Text {
                 pos,
                 text,

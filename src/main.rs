@@ -14,7 +14,6 @@ mod game_mode_transitions;
 mod input_processing;
 mod level_data;
 mod message_stream;
-mod physics_engine;
 mod render;
 mod render_commands;
 mod state;

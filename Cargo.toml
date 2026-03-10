@@ -9,9 +9,7 @@ edition = "2021"
 glam = "0.30.9"
 hecs = "0.11.0"
 lazy_static = "1.5.0"
-nalgebra = { version = "0.34.1", features = ["convert-glam030", "glam030"] }
 rand = "0.10.0"
-rapier2d = { version = "0.32.0", features = [] }
 raylib = "5.5.1"
 strum = "0.28.0"
 strum_macros = "0.28.0"
