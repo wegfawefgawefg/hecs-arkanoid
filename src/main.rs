@@ -15,7 +15,6 @@ mod input_processing;
 mod level_data;
 mod message_stream;
 mod render;
-mod render_commands;
 mod state;
 mod step;
 mod systems;
@@ -111,7 +110,6 @@ fn main() {
             state.t += 1.0;
             state.time_since_last_update = 0.0;
 
-            state.render_command_buffer.clear();
             state.audio_command_buffer.clear();
 
             step::step(&mut rl, &mut ecs, &mut state);
@@ -128,7 +126,7 @@ fn main() {
                 &mut draw_handle.begin_texture_mode(&rlt, &mut render_texture);
             low_res_draw_handle.clear_background(Color::BLACK);
 
-            render::draw(&state, low_res_draw_handle);
+            render::draw(&ecs, &state, low_res_draw_handle);
         }
         scale_and_blit_render_texture_to_window(
             &rlt,

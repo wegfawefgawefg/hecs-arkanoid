@@ -1,31 +1,35 @@
 use glam::Vec2;
+use hecs::World;
 use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode};
 
 use crate::{
-    render_commands::execute_render_command_buffer,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
-    DIMS,
+    systems, DIMS,
 };
 
-pub fn draw(state: &State, low_res_draw_handle: &mut RaylibTextureMode<RaylibDrawHandle>) {
+pub fn draw(
+    ecs: &World,
+    state: &State,
+    low_res_draw_handle: &mut RaylibTextureMode<RaylibDrawHandle>,
+) {
     match state.game_mode {
         GameMode::Title => {
             title_render(state, low_res_draw_handle);
         }
         GameMode::PrepareLevel => {
-            prepare_level_render(state, low_res_draw_handle);
+            prepare_level_render(ecs, state, low_res_draw_handle);
         }
         GameMode::Playing => {
-            playing_render(state, low_res_draw_handle);
+            playing_render(ecs, state, low_res_draw_handle);
         }
         GameMode::LevelComplete => {
-            level_complete_render(state, low_res_draw_handle);
+            level_complete_render(ecs, state, low_res_draw_handle);
         }
         GameMode::WinGame => {
-            win_game_render(state, low_res_draw_handle);
+            win_game_render(ecs, state, low_res_draw_handle);
         }
         GameMode::GameOver => {
-            game_over_render(state, low_res_draw_handle);
+            game_over_render(ecs, state, low_res_draw_handle);
         }
     }
 }
@@ -49,7 +53,11 @@ pub fn title_render(_state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>)
     );
 }
 
-pub fn prepare_level_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+pub fn prepare_level_render(
+    ecs: &World,
+    state: &State,
+    d: &mut RaylibTextureMode<RaylibDrawHandle>,
+) {
     // let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.7);
     // let mode_title = "GameMode: PrepareLevel";
     // let size = 1;
@@ -79,7 +87,7 @@ pub fn prepare_level_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawH
     //     Color::WHITE,
     // );
 
-    playing_render(state, d);
+    playing_render(ecs, state, d);
 
     if let PrepareLevelMode::AnnounceLevel = state.prepare_level_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
@@ -96,8 +104,8 @@ pub fn prepare_level_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawH
     }
 }
 
-pub fn playing_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
-    execute_render_command_buffer(d, &state.render_command_buffer);
+pub fn playing_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+    systems::playing::rendering::render(ecs, state, d);
 }
 
 const MESSAGES_OF_ENCOURAGEMENT: [&str; 35] = [
@@ -138,7 +146,13 @@ const MESSAGES_OF_ENCOURAGEMENT: [&str; 35] = [
     "epic",
 ];
 
-pub fn level_complete_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+pub fn level_complete_render(
+    ecs: &World,
+    state: &State,
+    d: &mut RaylibTextureMode<RaylibDrawHandle>,
+) {
+    playing_render(ecs, state, d);
+
     if let LevelCompleteMode::Announce = state.level_complete_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = MESSAGES_OF_ENCOURAGEMENT[state.level as usize - 1];
@@ -170,7 +184,9 @@ pub fn level_complete_render(state: &State, d: &mut RaylibTextureMode<RaylibDraw
     }
 }
 
-pub fn win_game_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+pub fn win_game_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+    playing_render(ecs, state, d);
+
     if let WinGameMode::Announce = state.win_game_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = "you did it";
@@ -198,7 +214,9 @@ pub fn win_game_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle
     }
 }
 
-pub fn game_over_render(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+pub fn game_over_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
+    playing_render(ecs, state, d);
+
     if let GameOverMode::Announce = state.game_over_state.mode {
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = "too bad";

@@ -42,8 +42,6 @@ pub fn prepare_level_step(rl: &mut RaylibHandle, state: &mut State, ecs: &mut Wo
         state.prepare_level_state.countdown -= 1;
     }
 
-    systems::playing::rendering::render(ecs, state);
-
     match state.prepare_level_state.mode {
         PrepareLevelMode::SpawnStuffIn => {
             if state.prepare_level_state.countdown == 0 {
@@ -108,15 +106,12 @@ pub fn playing_step(state: &mut State, ecs: &mut World) {
     systems::playing::cleanup::process_deletion_events(ecs, state);
     systems::playing::state_changing::check_for_level_complete(ecs, state);
     systems::playing::state_changing::check_for_level_lost(ecs, state);
-    systems::playing::rendering::render(ecs, state);
 }
 
-pub fn level_complete_step(state: &mut State, ecs: &mut World) {
+pub fn level_complete_step(state: &mut State, _ecs: &mut World) {
     if state.level_complete_state.countdown > 0 {
         state.level_complete_state.countdown -= 1;
     }
-
-    systems::playing::rendering::render(ecs, state);
 
     match state.level_complete_state.mode {
         LevelCompleteMode::Announce => {
@@ -140,12 +135,10 @@ pub fn level_complete_step(state: &mut State, ecs: &mut World) {
     }
 }
 
-pub fn win_game_step(state: &mut State, ecs: &mut World) {
+pub fn win_game_step(state: &mut State, _ecs: &mut World) {
     if state.win_game_state.countdown > 0 {
         state.win_game_state.countdown -= 1;
     }
-
-    systems::playing::rendering::render(ecs, state);
 
     match state.win_game_state.mode {
         WinGameMode::Announce => {
@@ -168,12 +161,10 @@ pub fn win_game_step(state: &mut State, ecs: &mut World) {
     }
 }
 
-pub fn game_over_step(state: &mut State, ecs: &mut World) {
+pub fn game_over_step(state: &mut State, _ecs: &mut World) {
     if state.game_over_state.countdown > 0 {
         state.game_over_state.countdown -= 1;
     }
-
-    systems::playing::rendering::render(ecs, state);
 
     match state.game_over_state.mode {
         GameOverMode::Announce => {

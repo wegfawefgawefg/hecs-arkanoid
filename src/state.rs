@@ -4,7 +4,6 @@ use hecs::Entity;
 use crate::{
     audio_playing::AudioCommandBuffer,
     input_processing::{PlayingInputs, TitleInputs},
-    render_commands::RenderCommandBuffer,
 };
 
 pub const FRAMES_PER_SECOND: u32 = 120;
@@ -35,8 +34,6 @@ pub struct State {
     pub game_over_state: Box<GameOverState>,
 
     pub audio_command_buffer: AudioCommandBuffer,
-    pub render_command_buffer: RenderCommandBuffer,
-
     pub title_inputs: TitleInputs,
     pub playing_inputs: PlayingInputs,
     pub mouse_screen_pos: Vec2,
@@ -70,7 +67,6 @@ impl State {
             countdown: 0,
         });
 
-        let render_command_buffer: RenderCommandBuffer = RenderCommandBuffer::new();
         let audio_command_buffer: AudioCommandBuffer = AudioCommandBuffer::new();
 
         let title_inputs = TitleInputs::new();
@@ -95,8 +91,6 @@ impl State {
             game_over_state,
 
             audio_command_buffer,
-            render_command_buffer,
-
             title_inputs,
             playing_inputs,
             mouse_screen_pos,
