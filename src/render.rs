@@ -14,10 +14,7 @@ const LEVEL_GAP_SIZE: f32 = 1.0;
 const LEVEL_BLOCK_WIDTH: f32 = 20.0;
 const LEVEL_BLOCK_HEIGHT: f32 = 8.0;
 const LEVEL_STRIP_OFFSET_X: f32 = 240.0 + 40.0;
-const BOARD_TOP_LEFT: Vec2 = Vec2::new(5.0, 3.0);
-const BOARD_DIMS: Vec2 = Vec2::new(230.0, 125.0);
-const BOARD_FRAME_TOP_LEFT: Vec2 = Vec2::new(4.0, 2.0);
-const BOARD_FRAME_DIMS: Vec2 = Vec2::new(232.0, 127.0);
+const WALL_THICKNESS: f32 = 20.0;
 
 pub fn draw(
     ecs: &World,
@@ -179,10 +176,10 @@ fn sigmoid01(t: f32) -> f32 {
 }
 
 fn level_world_center(level_offset_x: f32) -> Vec2 {
-    BOARD_TOP_LEFT + Vec2::new(level_offset_x, 0.0) + BOARD_DIMS * 0.5
+    Vec2::new(DIMS.x as f32 * 0.5 + level_offset_x, DIMS.y as f32 * 0.5)
 }
 
-fn draw_stage_frame(
+fn draw_stage_walls(
     d: &mut RaylibTextureMode<RaylibDrawHandle>,
     camera_center: Vec2,
     zoom: f32,
@@ -190,9 +187,39 @@ fn draw_stage_frame(
 ) {
     let screen_center = DIMS.as_vec2() * 0.5;
     let transform = |world: Vec2| (world - camera_center) * zoom + screen_center;
-    let top_left = transform(BOARD_FRAME_TOP_LEFT + Vec2::new(level_offset_x, 0.0));
-    let dims = BOARD_FRAME_DIMS * zoom;
-    draw_rect_outline(d, top_left, dims, Color::new(180, 180, 180, 255));
+
+    let mut draw_wall = |pos: Vec2, dims: Vec2, color: Color| {
+        let top_left = transform(pos + Vec2::new(level_offset_x, 0.0));
+        let dims = dims * zoom;
+        d.draw_rectangle(
+            top_left.x.round() as i32,
+            top_left.y.round() as i32,
+            dims.x.round().max(1.0) as i32,
+            dims.y.round().max(1.0) as i32,
+            color,
+        );
+    };
+
+    draw_wall(
+        Vec2::new(0.0, -WALL_THICKNESS + 1.0),
+        Vec2::new(DIMS.x as f32, WALL_THICKNESS),
+        Color::WHITE,
+    );
+    draw_wall(
+        Vec2::new(0.0, DIMS.y as f32 - 1.0),
+        Vec2::new(DIMS.x as f32, WALL_THICKNESS),
+        Color::RED,
+    );
+    draw_wall(
+        Vec2::new(-WALL_THICKNESS + 1.0, 0.0),
+        Vec2::new(WALL_THICKNESS, DIMS.y as f32),
+        Color::WHITE,
+    );
+    draw_wall(
+        Vec2::new(DIMS.x as f32 - 1.0, 0.0),
+        Vec2::new(WALL_THICKNESS, DIMS.y as f32),
+        Color::WHITE,
+    );
 }
 
 fn draw_block_style(
@@ -329,8 +356,8 @@ fn draw_stage_transition_strip(
         }
     };
 
-    draw_stage_frame(d, camera_center, zoom, 0.0);
-    draw_stage_frame(d, camera_center, zoom, next_offset_x);
+    draw_stage_walls(d, camera_center, zoom, 0.0);
+    draw_stage_walls(d, camera_center, zoom, next_offset_x);
     draw_live_stage_preview(ecs, d, camera_center, zoom, 0.0);
     draw_level_preview(
         d,
