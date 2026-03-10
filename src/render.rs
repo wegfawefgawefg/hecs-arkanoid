@@ -8,6 +8,11 @@ use crate::{
     DIMS,
 };
 
+const LEVEL_GAP_SIZE: f32 = 1.0;
+const LEVEL_BLOCK_WIDTH: f32 = 20.0;
+const LEVEL_BLOCK_HEIGHT: f32 = 8.0;
+const LEVEL_STRIP_OFFSET_X: f32 = 240.0 + 40.0;
+
 pub fn draw(
     ecs: &World,
     state: &State,
@@ -158,140 +163,114 @@ const MESSAGES_OF_ENCOURAGEMENT: [&str; 35] = [
     "epic",
 ];
 
-fn smoothstep01(t: f32) -> f32 {
+fn sigmoid01(t: f32) -> f32 {
     let t = t.clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
+    let x = t * 2.0 - 1.0;
+    let y = 1.0 / (1.0 + (-6.0 * x).exp());
+    let min = 1.0 / (1.0 + 6.0_f32.exp());
+    let max = 1.0 / (1.0 + (-6.0_f32).exp());
+    ((y - min) / (max - min)).clamp(0.0, 1.0)
+}
+
+fn level_world_center(level_offset_x: f32) -> Vec2 {
+    let board_width = 11.0 * LEVEL_BLOCK_WIDTH + 11.0 * LEVEL_GAP_SIZE;
+    let board_height = 14.0 * LEVEL_BLOCK_HEIGHT + 14.0 * LEVEL_GAP_SIZE;
+    Vec2::new(
+        level_offset_x + 5.0 + board_width * 0.5,
+        3.0 + board_height * 0.5,
+    )
 }
 
 fn draw_level_preview(
     d: &mut RaylibTextureMode<RaylibDrawHandle>,
     level: u32,
-    origin: Vec2,
-    cell: Vec2,
-    cell_gap: f32,
-    block_alpha: u8,
-) -> Vec2 {
+    camera_center: Vec2,
+    zoom: f32,
+    level_offset_x: f32,
+    alpha: u8,
+) {
     let level = level.clamp(1, level_data::LEVEL_BLOCK_DATA.len() as u32);
     let layout = level_data::LEVEL_BLOCK_DATA[(level - 1) as usize];
+    let screen_center = DIMS.as_vec2() * 0.5;
+    let transform = |world: Vec2| (world - camera_center) * zoom + screen_center;
 
-    for (y, row) in layout.iter().enumerate() {
-        for (x, color_index) in row.iter().enumerate() {
-            if *color_index == 0 {
+    let cursor_x_start = 4.0 + level_offset_x;
+    let mut cursor = Vec2::new(cursor_x_start, 2.0);
+    for y in 0..=13 {
+        cursor.x = cursor_x_start;
+        cursor.y += LEVEL_GAP_SIZE;
+        for x in 0..=11 {
+            cursor.x += LEVEL_GAP_SIZE;
+            if x == 11 {
+                break;
+            }
+            let color_index = layout[y + 2][x];
+            if color_index == 0 {
+                cursor.x += LEVEL_BLOCK_WIDTH;
                 continue;
             }
-            let color = level_data::RL_COLOR_PALETTE[*color_index as usize];
-            let color = Color::new(color.r, color.g, color.b, block_alpha);
-            let pos = origin
-                + Vec2::new(
-                    x as f32 * (cell.x + cell_gap),
-                    y as f32 * (cell.y + cell_gap),
-                );
-            d.draw_rectangle(
-                pos.x.round() as i32,
-                pos.y.round() as i32,
-                cell.x.round() as i32,
-                cell.y.round() as i32,
-                color,
-            );
+
+            let color = level_data::RL_COLOR_PALETTE[color_index as usize];
+            let color = Color::new(color.r, color.g, color.b, alpha);
+            let pos = transform(cursor);
+            let dims = Vec2::new(LEVEL_BLOCK_WIDTH, LEVEL_BLOCK_HEIGHT) * zoom;
+            let left = pos.x.round() as i32;
+            let top = pos.y.round() as i32;
+            let width = dims.x.round().max(1.0) as i32;
+            let height = dims.y.round().max(1.0) as i32;
+
+            if color_index == 10 {
+                d.draw_rectangle(left, top, width, height, color);
+            } else {
+                d.draw_rectangle_lines(left, top, width, height, color);
+                if color_index == 9 {
+                    d.draw_line(left, top, left + width - 1, top + height - 1, color);
+                }
+            }
+
+            cursor.x += LEVEL_BLOCK_WIDTH;
         }
     }
-
-    let preview_dims = Vec2::new(
-        11.0 * cell.x + 10.0 * cell_gap,
-        28.0 * cell.y + 27.0 * cell_gap,
-    );
-    preview_dims
 }
 
 fn draw_stage_transition_strip(state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
-    let announce = (60.0 * crate::TS_RATIO) as u32;
     let announce2 = (40.0 * crate::TS_RATIO) as u32;
     let pause = (40.0 * crate::TS_RATIO) as u32;
-    let total = (announce + announce2 + pause) as f32;
-    let elapsed = match state.level_complete_state.mode {
-        LevelCompleteMode::Announce => {
-            announce.saturating_sub(state.level_complete_state.countdown)
-        }
+    d.draw_rectangle(0, 0, DIMS.x as i32, DIMS.y as i32, Color::BLACK);
+    let current_center = level_world_center(0.0);
+    let next_center = level_world_center(LEVEL_STRIP_OFFSET_X);
+
+    let (camera_center, zoom) = match state.level_complete_state.mode {
+        LevelCompleteMode::Announce => (current_center, 1.0),
         LevelCompleteMode::Announce2 => {
-            announce + announce2.saturating_sub(state.level_complete_state.countdown)
+            let t = 1.0 - (state.level_complete_state.countdown as f32 / announce2 as f32);
+            let zoom_t = sigmoid01((t / 0.45).clamp(0.0, 1.0));
+            let pan_t = sigmoid01(((t - 0.22) / 0.56).clamp(0.0, 1.0));
+            let zoom = 1.0 + (0.36 - 1.0) * zoom_t;
+            let center = current_center.lerp(next_center, pan_t);
+            (center, zoom)
         }
         LevelCompleteMode::Pause => {
-            announce + announce2 + pause.saturating_sub(state.level_complete_state.countdown)
+            let t = 1.0 - (state.level_complete_state.countdown as f32 / pause as f32);
+            let zoom = 0.36 + (1.0 - 0.36) * sigmoid01(t);
+            (next_center, zoom)
         }
-    } as f32;
-    let progress = (elapsed / total).clamp(0.0, 1.0);
-
-    let cell = Vec2::new(7.0, 3.0);
-    let cell_gap = 1.0;
-    let preview_gap = 18.0;
-    let preview_dims = Vec2::new(
-        11.0 * cell.x + 10.0 * cell_gap,
-        28.0 * cell.y + 27.0 * cell_gap,
-    );
-    let strip_origin = Vec2::new(
-        ((DIMS.x as f32) - (preview_dims.x * 2.0 + preview_gap)) * 0.5,
-        22.0,
-    );
-    let current_origin = strip_origin;
-    let next_origin = strip_origin + Vec2::new(preview_dims.x + preview_gap, 0.0);
-
-    let current_center = current_origin + preview_dims * 0.5;
-    let next_center = next_origin + preview_dims * 0.5;
-
-    let (camera_center, zoom) = if progress < 0.34 {
-        let t = smoothstep01(progress / 0.34);
-        (current_center, 2.15 + (1.0 - 2.15) * t)
-    } else if progress < 0.7 {
-        let t = smoothstep01((progress - 0.34) / 0.36);
-        (current_center.lerp(next_center, t), 1.0)
-    } else {
-        let t = smoothstep01((progress - 0.7) / 0.3);
-        (next_center, 1.0 + (2.15 - 1.0) * t)
     };
 
-    let screen_center = DIMS.as_vec2() * 0.5;
-    let transform = |p: Vec2| (p - camera_center) * zoom + screen_center;
-
-    let current_draw = transform(current_origin);
-    let next_draw = transform(next_origin);
-    let dims_draw = preview_dims * zoom;
-
-    d.draw_rectangle(0, 0, DIMS.x as i32, DIMS.y as i32, Color::BLACK);
-
-    let current_frame_color = Color::new(180, 180, 180, 255);
-    let next_frame_color = Color::new(140, 140, 140, 255);
-    d.draw_rectangle_lines(
-        current_draw.x.round() as i32 - 2,
-        current_draw.y.round() as i32 - 2,
-        dims_draw.x.round() as i32 + 4,
-        dims_draw.y.round() as i32 + 4,
-        current_frame_color,
-    );
-    d.draw_rectangle_lines(
-        next_draw.x.round() as i32 - 2,
-        next_draw.y.round() as i32 - 2,
-        dims_draw.x.round() as i32 + 4,
-        dims_draw.y.round() as i32 + 4,
-        next_frame_color,
-    );
-
-    let scaled_cell = cell * zoom;
-    let scaled_gap = cell_gap * zoom;
-    let _ = draw_level_preview(d, state.level, current_draw, scaled_cell, scaled_gap, 255);
-    let _ = draw_level_preview(
+    draw_level_preview(d, state.level, camera_center, zoom, 0.0, 255);
+    draw_level_preview(
         d,
         (state.level + 1).clamp(1, level_data::LEVEL_BLOCK_DATA.len() as u32),
-        next_draw,
-        scaled_cell,
-        scaled_gap,
+        camera_center,
+        zoom,
+        LEVEL_STRIP_OFFSET_X,
         220,
     );
 
-    let ribbon_y = (screen_center.y + dims_draw.y * 0.5 + 8.0).round() as i32;
     d.draw_text(
         format!("{} -> {}", state.level, state.level + 1).as_str(),
-        screen_center.x.round() as i32 - 18,
-        ribbon_y,
+        DIMS.x as i32 / 2 - 18,
+        (DIMS.y as f32 * 0.16).round() as i32,
         10,
         Color::WHITE,
     );
@@ -302,10 +281,8 @@ pub fn level_complete_render(
     state: &State,
     d: &mut RaylibTextureMode<RaylibDrawHandle>,
 ) {
-    let _ = ecs;
-    draw_stage_transition_strip(state, d);
-
     if let LevelCompleteMode::Announce = state.level_complete_state.mode {
+        playing_render(ecs, state, d);
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = MESSAGES_OF_ENCOURAGEMENT[state.level as usize - 1];
         let size = juice::text_pulse_size(state, 20, 4.0);
@@ -318,6 +295,7 @@ pub fn level_complete_render(
         );
         cursor.y += size as f32 * 1.5;
     } else if let LevelCompleteMode::Announce2 = state.level_complete_state.mode {
+        draw_stage_transition_strip(state, d);
         let mut cursor = Vec2::new(DIMS.x as f32 * 0.15, DIMS.y as f32 * 0.4);
         let title = if state.level == 1 {
             "you did it"
@@ -334,6 +312,7 @@ pub fn level_complete_render(
         );
         cursor.y += size as f32 * 1.5;
     } else if let LevelCompleteMode::Pause = state.level_complete_state.mode {
+        draw_stage_transition_strip(state, d);
         let cursor = Vec2::new(DIMS.x as f32 * 0.36, DIMS.y as f32 * 0.12);
         let title = format!("Level {}", state.level + 1);
         let size = juice::text_pulse_size(state, 16, 3.0);
