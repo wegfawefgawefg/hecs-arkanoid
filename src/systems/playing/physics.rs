@@ -194,14 +194,32 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
             }
 
             if let Some((paddle_entity, paddle_rect)) = paddle {
-                if ball_rect.overlaps(paddle_rect) && next_vel.y > 0.0 {
-                    next_pos.y = paddle_rect.pos.y - ball_rect.dims.y;
-                    next_vel.y = -next_vel.y.abs();
-                    if let Some(new_direction) =
-                        ball_hits_paddle_side(ecs, ball_entity, paddle_entity)
-                    {
-                        next_vel.x = BALL_SPEED * new_direction;
+                if ball_rect.overlaps(paddle_rect) {
+                    let (corrected_pos, hit_horizontal) =
+                        resolve_rect_collision(ball_rect, previous_rect, paddle_rect);
+                    next_pos = corrected_pos;
+
+                    if hit_horizontal {
+                        if previous_rect.right() <= paddle_rect.pos.x {
+                            next_vel.x = -next_vel.x.abs();
+                        } else if previous_rect.pos.x >= paddle_rect.right() {
+                            next_vel.x = next_vel.x.abs();
+                        } else {
+                            next_vel.x = -next_vel.x;
+                        }
+                    } else {
+                        if previous_rect.bottom() <= paddle_rect.pos.y {
+                            next_vel.y = -next_vel.y.abs();
+                            if let Some(new_direction) =
+                                ball_hits_paddle_side(ecs, ball_entity, paddle_entity)
+                            {
+                                next_vel.x = BALL_SPEED * new_direction;
+                            }
+                        } else {
+                            next_vel.y = next_vel.y.abs();
+                        }
                     }
+
                     state
                         .audio_command_buffer
                         .push(AudioCommand::BallPaddleBounce);

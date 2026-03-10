@@ -1,6 +1,6 @@
 use glam::Vec2;
 use hecs::World;
-use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode, Vector2};
+use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode};
 
 use crate::{
     components::{
@@ -10,29 +10,28 @@ use crate::{
     DIMS,
 };
 
+fn snap_rect(pos: Vec2, dims: Vec2) -> (i32, i32, i32, i32) {
+    let left = pos.x.round() as i32;
+    let top = pos.y.round() as i32;
+    let width = dims.x.round().max(1.0) as i32;
+    let height = dims.y.round().max(1.0) as i32;
+    (left, top, width, height)
+}
+
 fn draw_rect_outline(
     d: &mut RaylibTextureMode<RaylibDrawHandle>,
     pos: Vec2,
     dims: Vec2,
     color: Color,
 ) {
-    let left = pos.x;
-    let top = pos.y;
-    let right = pos.x + dims.x - 1.0;
-    let bottom = pos.y + dims.y - 1.0;
+    let (left, top, width, height) = snap_rect(pos, dims);
+    let right = left + width - 1;
+    let bottom = top + height - 1;
 
-    d.draw_line_v(Vector2::new(left, top), Vector2::new(right, top), color);
-    d.draw_line_v(
-        Vector2::new(left, bottom),
-        Vector2::new(right, bottom),
-        color,
-    );
-    d.draw_line_v(Vector2::new(left, top), Vector2::new(left, bottom), color);
-    d.draw_line_v(Vector2::new(right, top), Vector2::new(right, bottom), color);
-    d.draw_pixel(left as i32, top as i32, color);
-    d.draw_pixel(right as i32, top as i32, color);
-    d.draw_pixel(left as i32, bottom as i32, color);
-    d.draw_pixel(right as i32, bottom as i32, color);
+    d.draw_rectangle(left, top, width, 1, color);
+    d.draw_rectangle(left, bottom, width, 1, color);
+    d.draw_rectangle(left, top, 1, height, color);
+    d.draw_rectangle(right, top, 1, height, color);
 }
 
 pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
@@ -62,13 +61,8 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
         if r.get().is_ok() {
             color = Color::RED;
         }
-        d.draw_rectangle(
-            ctransform.pos.x as i32,
-            ctransform.pos.y as i32,
-            shape.dims.x as i32,
-            shape.dims.y as i32,
-            color,
-        );
+        let (left, top, width, height) = snap_rect(ctransform.pos, shape.dims);
+        d.draw_rectangle(left, top, width, height, color);
     }
 
     // render every player as a paddle
@@ -83,24 +77,13 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
     {
         let ball_unbreakable = ecs.satisfies::<&StrongBlock>(entity);
         if ball_unbreakable {
-            d.draw_rectangle(
-                ctransform.pos.x as i32,
-                ctransform.pos.y as i32,
-                shape.dims.x as i32,
-                shape.dims.y as i32,
-                block.color,
-            );
+            let (left, top, width, height) = snap_rect(ctransform.pos, shape.dims);
+            d.draw_rectangle(left, top, width, height, block.color);
         } else {
             draw_rect_outline(d, ctransform.pos, shape.dims, block.color);
             if health.hp > 1 {
-                d.draw_line_v(
-                    Vector2::new(ctransform.pos.x, ctransform.pos.y),
-                    Vector2::new(
-                        ctransform.pos.x + shape.dims.x - 1.0,
-                        ctransform.pos.y + shape.dims.y - 1.0,
-                    ),
-                    block.color,
-                );
+                let (left, top, width, height) = snap_rect(ctransform.pos, shape.dims);
+                d.draw_line(left, top, left + width - 1, top + height - 1, block.color);
             }
         }
     }
