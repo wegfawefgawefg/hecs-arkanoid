@@ -50,6 +50,7 @@ pub struct State {
     pub laser_mode: bool,
     pub fireball_mode: bool,
     pub laser_cooldown: u32,
+    pub powerup_dry_streak: u32,
 
     pub deletion_events: Vec<DeletionEvent>,
 }
@@ -116,6 +117,7 @@ impl State {
             laser_mode: false,
             fireball_mode: false,
             laser_cooldown: 0,
+            powerup_dry_streak: 0,
 
             deletion_events,
         }
@@ -126,6 +128,7 @@ impl State {
         self.lives = 3;
         self.score = 0;
         self.near_clear_frames = 0;
+        self.powerup_dry_streak = 0;
         self.reset_powerup_state();
     }
 

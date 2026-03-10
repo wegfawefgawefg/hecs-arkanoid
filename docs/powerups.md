@@ -70,6 +70,9 @@ Lives can be small paddle or ball icons. Active effects should be listed vertica
 
 - Powerup drops should feel helpful more often than harmful.
 - `Shrink` and `SpeedUp` are fine as tension spikes, but they should be less common than the helpful drops.
+- Base drop chance should stay modest, around `10%`.
+- After a dry streak of about `12` missed breakable-block drops, the next checks should get a boosted chance, around `18%`.
+- We are not enforcing a classic "only one falling capsule at a time" rule in this repo.
 - Powerups can persist across levels for now.
 - If only a few breakable blocks remain for too long, the level should auto-advance rather than soft-locking the run in cleanup.
 - Losing a life should clear active modifiers and return the run to a clean default state, except score / remaining lives.

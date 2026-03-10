@@ -304,7 +304,11 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                     }
                     if health.hp == 0 {
                         state.score = state.score.saturating_add(90);
-                        maybe_spawn_powerup_drop(ecs, block_rect.pos + block_rect.dims / 2.0);
+                        maybe_spawn_powerup_drop(
+                            ecs,
+                            state,
+                            block_rect.pos + block_rect.dims / 2.0,
+                        );
                         state
                             .audio_command_buffer
                             .push(AudioCommand::BallBlockBounce);

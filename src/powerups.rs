@@ -13,7 +13,9 @@ use crate::{
     DIMS,
 };
 
-const POWERUP_DROP_CHANCE: f32 = 0.12;
+const POWERUP_DROP_CHANCE: f32 = 0.10;
+const POWERUP_DRY_STREAK_THRESHOLD: u32 = 12;
+const POWERUP_DRY_STREAK_CHANCE: f32 = 0.18;
 const LASER_COOLDOWN_FRAMES: u32 = 18;
 
 #[derive(Clone, Copy)]
@@ -47,24 +49,34 @@ fn roll_powerup() -> PowerUpType {
     let weighted = [
         PowerUpType::Enlarge,
         PowerUpType::Enlarge,
-        PowerUpType::SpeedUp,
-        PowerUpType::Enlarge,
         PowerUpType::SlowDown,
         PowerUpType::BallSplit,
+        PowerUpType::Enlarge,
         PowerUpType::Catch,
-        PowerUpType::ExtraLife,
+        PowerUpType::BallSplit,
+        PowerUpType::Catch,
         PowerUpType::Lasers,
+        PowerUpType::ExtraLife,
         PowerUpType::BombBall,
         PowerUpType::Shrink,
+        PowerUpType::SpeedUp,
     ];
     let mut rng = rand::rng();
     weighted[rng.random_range(0..weighted.len())]
 }
 
-pub fn maybe_spawn_powerup_drop(ecs: &mut World, pos: Vec2) {
+pub fn maybe_spawn_powerup_drop(ecs: &mut World, state: &mut State, pos: Vec2) {
     let mut rng = rand::rng();
-    if rng.random_range(0.0..1.0) <= POWERUP_DROP_CHANCE {
+    let chance = if state.powerup_dry_streak >= POWERUP_DRY_STREAK_THRESHOLD {
+        POWERUP_DRY_STREAK_CHANCE
+    } else {
+        POWERUP_DROP_CHANCE
+    };
+    if rng.random_range(0.0..1.0) <= chance {
         spawn_powerup_drop(ecs, pos, roll_powerup());
+        state.powerup_dry_streak = 0;
+    } else {
+        state.powerup_dry_streak = state.powerup_dry_streak.saturating_add(1);
     }
 }
 
@@ -260,7 +272,7 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
 
         if destroyed {
             state.score = state.score.saturating_add(90);
-            maybe_spawn_powerup_drop(ecs, block_pos + Vec2::new(6.0, 4.0));
+            maybe_spawn_powerup_drop(ecs, state, block_pos + Vec2::new(6.0, 4.0));
             state.deletion_events.push(DeletionEvent::Entity {
                 entity: block_entity,
             });
