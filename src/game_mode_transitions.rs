@@ -44,6 +44,7 @@ pub fn title_init_state(ecs: &mut World, _state: &mut State) {
 pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
     state.prepare_level_state.mode = PrepareLevelMode::SpawnStuffIn;
     state.prepare_level_state.countdown = (20.0 * TS_RATIO) as u32;
+    state.near_clear_frames = 0;
 
     ecs.clear();
 

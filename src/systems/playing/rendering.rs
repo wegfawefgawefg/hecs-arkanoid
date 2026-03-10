@@ -42,6 +42,8 @@ fn powerup_color(power_up_type: PowerUpType) -> Color {
         PowerUpType::SpeedUp => Color::ORANGE,
         PowerUpType::SlowDown => Color::SKYBLUE,
         PowerUpType::BallSplit => Color::YELLOW,
+        PowerUpType::Catch => Color::LIME,
+        PowerUpType::ExtraLife => Color::GOLD,
         PowerUpType::Lasers => Color::RED,
         PowerUpType::BombBall => Color::MAGENTA,
     }
@@ -80,6 +82,15 @@ fn draw_powerup_symbol(
             d.draw_circle(x + 2, y + 2, 1.0, color);
             d.draw_circle(x + 5, y + 2, 1.0, color);
             d.draw_circle(x + 4, y + 5, 1.0, color);
+        }
+        PowerUpType::Catch => {
+            d.draw_line(x + 2, y + 1, x + 2, y + 6, color);
+            d.draw_line(x + 5, y + 1, x + 5, y + 6, color);
+            d.draw_line(x + 2, y + 6, x + 5, y + 6, color);
+        }
+        PowerUpType::ExtraLife => {
+            d.draw_line(x + 4, y + 1, x + 4, y + 6, color);
+            d.draw_line(x + 2, y + 3, x + 6, y + 3, color);
         }
         PowerUpType::Lasers => {
             d.draw_rectangle(x + 2, y + 1, 1, 6, color);
@@ -250,6 +261,19 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
         );
         draw_powerup_symbol(d, Vec2::new(6.0, active_y as f32), kind, color);
         d.draw_text("Laser", 18, active_y, 8, Color::WHITE);
+        active_y += 10;
+    }
+    if state.sticky_mode {
+        let kind = PowerUpType::Catch;
+        let color = powerup_color(kind);
+        draw_rect_outline(
+            d,
+            Vec2::new(6.0, active_y as f32),
+            Vec2::new(8.0, 8.0),
+            color,
+        );
+        draw_powerup_symbol(d, Vec2::new(6.0, active_y as f32), kind, color);
+        d.draw_text("Catch", 18, active_y, 8, Color::WHITE);
         active_y += 10;
     }
     if state.fireball_mode {

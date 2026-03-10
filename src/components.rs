@@ -103,6 +103,8 @@ pub enum PowerUpType {
     SlowDown,
 
     BallSplit,
+    Catch,
+    ExtraLife,
 
     Lasers,
     BombBall,

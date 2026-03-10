@@ -43,8 +43,10 @@ pub struct State {
     pub lives: u32,
     pub score: u32,
     pub level_change_delay: u32,
+    pub near_clear_frames: u32,
     pub paddle_width_scale: f32,
     pub ball_speed_scale: f32,
+    pub sticky_mode: bool,
     pub laser_mode: bool,
     pub fireball_mode: bool,
     pub laser_cooldown: u32,
@@ -107,8 +109,10 @@ impl State {
             lives: 3,
             score: 0,
             level_change_delay: 0,
+            near_clear_frames: 0,
             paddle_width_scale: 1.0,
             ball_speed_scale: 1.0,
+            sticky_mode: false,
             laser_mode: false,
             fireball_mode: false,
             laser_cooldown: 0,
@@ -121,12 +125,14 @@ impl State {
         self.level = 1;
         self.lives = 3;
         self.score = 0;
+        self.near_clear_frames = 0;
         self.reset_powerup_state();
     }
 
     pub fn reset_powerup_state(&mut self) {
         self.paddle_width_scale = 1.0;
         self.ball_speed_scale = 1.0;
+        self.sticky_mode = false;
         self.laser_mode = false;
         self.fireball_mode = false;
         self.laser_cooldown = 0;

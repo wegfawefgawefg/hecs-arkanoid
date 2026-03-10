@@ -27,10 +27,14 @@ These came from the original `todo.txt`, with a few Arkanoid-standard clarificat
 4. `SlowDown`
   - decreases ball speed
 5. `BallSplit`
-  - spawns extra balls from the current one
-6. `Lasers`
+  - splits every live ball into more balls
+6. `Catch`
+  - ball sticks to the paddle until fired
+7. `ExtraLife`
+  - adds one life
+8. `Lasers`
   - paddle can fire upward shots
-7. `BombBall`
+9. `BombBall`
   - fireball mode; breakable blocks do not bounce the ball back
 
 ## Symbol Language
@@ -44,6 +48,8 @@ Suggested first-pass symbols:
 - `SpeedUp`: `>>`
 - `SlowDown`: `<<`
 - `BallSplit`: two or three small circles
+- `Catch`: a cup / tray shape
+- `ExtraLife`: plus sign
 - `Lasers`: twin vertical beams
 - `BombBall`: a circle with a small fuse / spark
 
@@ -65,12 +71,11 @@ Lives can be small paddle or ball icons. Active effects should be listed vertica
 - Powerup drops should feel helpful more often than harmful.
 - `Shrink` and `SpeedUp` are fine as tension spikes, but they should be less common than the helpful drops.
 - Powerups can persist across levels for now.
+- If only a few breakable blocks remain for too long, the level should auto-advance rather than soft-locking the run in cleanup.
 - Losing a life should clear active modifiers and return the run to a clean default state, except score / remaining lives.
 
 ## Follow-Ups
 
-- `Catch / Sticky Paddle`
-- `Extra Life`
 - indestructible / strong / powerup-carrying block variants
 - better score table and bonus scoring
 - particles and stronger feedback when catching a capsule

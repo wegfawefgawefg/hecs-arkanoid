@@ -2,7 +2,9 @@ use glam::Vec2;
 use hecs::World;
 
 use crate::audio_playing::AudioCommand;
-use crate::components::{Ball, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock};
+use crate::components::{
+    AttachedTo, Ball, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock,
+};
 use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
 use crate::state::{DeletionEvent, State, FRAMES_PER_SECOND};
 use crate::systems::playing::powerups::maybe_spawn_powerup_drop;
@@ -132,6 +134,7 @@ pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
 
 pub fn step_physics(ecs: &mut World, state: &mut State) {
     let dt = 1.0 / FRAMES_PER_SECOND as f32 / PHYSICS_SUBSTEPS as f32;
+    update_attached_balls(ecs, state);
     let paddle = ecs
         .query::<(hecs::Entity, &Paddle, &CTransform, &Shape)>()
         .iter()
@@ -148,18 +151,32 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
         let mut dropped = false;
 
         for _ in 0..PHYSICS_SUBSTEPS {
-            let Ok((ball_transform, ball_physics, ball_shape)) =
-                ecs.query_one_mut::<(&CTransform, &Physics, &Shape)>(ball_entity)
+            if ecs.satisfies::<&AttachedTo>(ball_entity) {
+                break;
+            }
+
+            let Some((mut next_pos, mut next_vel, previous_rect, mut ball_rect, ball_dims)) =
+                (|| {
+                    let (ball_transform, ball_physics, ball_shape) = ecs
+                        .query_one_mut::<(&CTransform, &Physics, &Shape)>(ball_entity)
+                        .ok()?;
+                    let next_pos = ball_transform.pos + ball_physics.vel * dt;
+                    let next_vel = ball_physics.vel;
+                    let previous_rect = rect_for(ball_transform, ball_shape);
+                    let ball_rect = Rect {
+                        pos: next_pos,
+                        dims: ball_shape.dims,
+                    };
+                    Some((
+                        next_pos,
+                        next_vel,
+                        previous_rect,
+                        ball_rect,
+                        ball_shape.dims,
+                    ))
+                })()
             else {
                 break;
-            };
-
-            let mut next_pos = ball_transform.pos + ball_physics.vel * dt;
-            let mut next_vel = ball_physics.vel;
-            let previous_rect = rect_for(ball_transform, ball_shape);
-            let mut ball_rect = Rect {
-                pos: next_pos,
-                dims: ball_shape.dims,
             };
 
             if ball_rect.pos.x <= 0.0 {
@@ -210,11 +227,25 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                         }
                     } else {
                         if previous_rect.bottom() <= paddle_rect.pos.y {
-                            next_vel.y = -next_vel.y.abs();
-                            if let Some(new_direction) =
-                                ball_hits_paddle_side(ecs, ball_entity, paddle_entity)
-                            {
-                                next_vel.x = BALL_SPEED * new_direction;
+                            if state.sticky_mode {
+                                let x_offset = next_pos.x - paddle_rect.pos.x + ball_dims.x / 2.0;
+                                next_pos.y = paddle_rect.pos.y - ball_dims.y - 1.0;
+                                next_vel = Vec2::ZERO;
+                                let _ = ecs.insert_one(
+                                    ball_entity,
+                                    AttachedTo {
+                                        entity: paddle_entity,
+                                        offset: Vec2::new(x_offset, -ball_dims.y - 1.0),
+                                    },
+                                );
+                            } else {
+                                next_vel.y = -next_vel.y.abs();
+                                if let Some(new_direction) =
+                                    ball_hits_paddle_side(ecs, ball_entity, paddle_entity)
+                                {
+                                    next_vel.x =
+                                        BALL_SPEED * state.ball_speed_scale * new_direction;
+                                }
                             }
                         } else {
                             next_vel.y = next_vel.y.abs();
@@ -298,6 +329,55 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
 
         if dropped {
             continue;
+        }
+    }
+}
+
+fn update_attached_balls(ecs: &mut World, state: &mut State) {
+    let attached_balls: Vec<_> = ecs
+        .query::<(hecs::Entity, &AttachedTo, &Shape)>()
+        .with::<&Ball>()
+        .iter()
+        .map(|(entity, attached_to, shape)| {
+            (entity, attached_to.entity, attached_to.offset, shape.dims)
+        })
+        .collect();
+
+    for (ball_entity, owner_entity, offset, dims) in attached_balls {
+        let owner_pos = {
+            let mut query = ecs.query_one::<&CTransform>(owner_entity);
+            query.get().ok().map(|transform| transform.pos)
+        };
+
+        let Some(owner_pos) = owner_pos else {
+            continue;
+        };
+
+        if let Ok((ball_transform, ball_physics)) =
+            ecs.query_one_mut::<(&mut CTransform, &mut Physics)>(ball_entity)
+        {
+            ball_transform.pos = owner_pos + offset;
+            ball_physics.vel = Vec2::ZERO;
+        }
+
+        if state.playing_inputs.shoot {
+            let launch_x = if offset.x < BASE_PADDLE_SHAPE.x / 3.0 {
+                -1.0
+            } else if offset.x > BASE_PADDLE_SHAPE.x * 2.0 / 3.0 {
+                1.0
+            } else {
+                0.0
+            };
+            if let Ok((ball_transform, ball_physics)) =
+                ecs.query_one_mut::<(&mut CTransform, &mut Physics)>(ball_entity)
+            {
+                ball_transform.pos.y = owner_pos.y - dims.y - 1.0;
+                ball_physics.vel = Vec2::new(
+                    BALL_SPEED * state.ball_speed_scale * launch_x,
+                    -BALL_SPEED * state.ball_speed_scale,
+                );
+            }
+            let _ = ecs.remove_one::<AttachedTo>(ball_entity);
         }
     }
 }

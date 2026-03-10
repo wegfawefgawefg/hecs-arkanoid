@@ -62,6 +62,7 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
         left: false,
         right: false,
         confirm: false,
+        shoot: false,
         next_level: false,
         previous_level: false,
         restart_level: false,
@@ -74,6 +75,11 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     }
     if rl.is_key_down(raylib::consts::KeyboardKey::KEY_SPACE) {
         inputs.confirm = true;
+    }
+    if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_SPACE)
+        || rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_Z)
+    {
+        inputs.shoot = true;
     }
     if rl.is_key_down(raylib::consts::KeyboardKey::KEY_R) {
         inputs.restart_level = true;
@@ -132,6 +138,7 @@ pub struct PlayingInputs {
     pub left: bool,
     pub right: bool,
     pub confirm: bool,
+    pub shoot: bool,
 
     pub next_level: bool,
     pub previous_level: bool,
@@ -144,6 +151,7 @@ impl PlayingInputs {
             left: false,
             right: false,
             confirm: false,
+            shoot: false,
 
             next_level: false,
             previous_level: false,

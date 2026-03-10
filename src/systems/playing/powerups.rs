@@ -13,7 +13,7 @@ use crate::{
     DIMS,
 };
 
-const POWERUP_DROP_CHANCE: f32 = 0.22;
+const POWERUP_DROP_CHANCE: f32 = 0.12;
 const LASER_COOLDOWN_FRAMES: u32 = 18;
 
 #[derive(Clone, Copy)]
@@ -48,8 +48,11 @@ fn roll_powerup() -> PowerUpType {
         PowerUpType::Enlarge,
         PowerUpType::Enlarge,
         PowerUpType::SpeedUp,
+        PowerUpType::Enlarge,
         PowerUpType::SlowDown,
         PowerUpType::BallSplit,
+        PowerUpType::Catch,
+        PowerUpType::ExtraLife,
         PowerUpType::Lasers,
         PowerUpType::BombBall,
         PowerUpType::Shrink,
@@ -80,13 +83,13 @@ fn apply_powerup(ecs: &mut World, state: &mut State, power_up_type: PowerUpType)
             state.ball_speed_scale = (state.ball_speed_scale - 0.2).clamp(0.6, 2.0);
         }
         PowerUpType::BallSplit => {
-            let source_ball = ecs
+            let source_balls: Vec<_> = ecs
                 .query::<(&Ball, &CTransform, &Physics, &OwnedBy)>()
                 .iter()
-                .next()
-                .map(|(_, ctransform, physics, owner)| (ctransform.pos, physics.vel, owner.owner));
+                .map(|(_, ctransform, physics, owner)| (ctransform.pos, physics.vel, owner.owner))
+                .collect();
 
-            if let Some((pos, vel, owner)) = source_ball {
+            for (pos, vel, owner) in source_balls {
                 let speed = vel.length().max(80.0);
                 spawn_ball(
                     ecs,
@@ -101,6 +104,12 @@ fn apply_powerup(ecs: &mut World, state: &mut State, power_up_type: PowerUpType)
                     owner,
                 );
             }
+        }
+        PowerUpType::Catch => {
+            state.sticky_mode = true;
+        }
+        PowerUpType::ExtraLife => {
+            state.lives = state.lives.saturating_add(1);
         }
         PowerUpType::Lasers => {
             state.laser_mode = true;
@@ -119,7 +128,7 @@ pub fn pre_physics(ecs: &mut World, state: &mut State) {
         state.laser_cooldown -= 1;
     }
 
-    if !state.laser_mode || !state.playing_inputs.confirm || state.laser_cooldown > 0 {
+    if !state.laser_mode || !state.playing_inputs.shoot || state.laser_cooldown > 0 {
         return;
     }
 
