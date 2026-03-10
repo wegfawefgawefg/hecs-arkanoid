@@ -72,13 +72,10 @@ pub fn prepare_level_step(rl: &mut RaylibHandle, state: &mut State, ecs: &mut Wo
                     paddle_entity = Some(entity);
                 }
 
-                // spawn balls
-                for i in 0..2 {
-                    let pos = Vec2::new(DIMS.x as f32 / 2.0 + i as f32 * 4.0, DIMS.y as f32 * 0.8);
-                    let vel = Vec2::new(0.0, -20.0);
-                    if let Some(players_paddle) = paddle_entity {
-                        spawn_ball(ecs, pos, vel, players_paddle);
-                    }
+                let pos = Vec2::new(DIMS.x as f32 / 2.0, DIMS.y as f32 * 0.8);
+                let vel = Vec2::new(0.0, -20.0);
+                if let Some(players_paddle) = paddle_entity {
+                    spawn_ball(ecs, pos, vel, players_paddle);
                 }
             }
         }

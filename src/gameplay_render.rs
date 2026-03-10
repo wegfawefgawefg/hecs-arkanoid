@@ -5,7 +5,7 @@ use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode};
 use crate::{
     components::{
         Ball, BallEater, Block, CTransform, Health, ImpactParticle, LaserShot, Paddle, Physics,
-        PowerUp, PowerUpDrop, PowerUpType, Shape, StrongBlock, Wall,
+        PowerUp, PowerUpDrop, PowerUpType, ScorePopup, Shape, StrongBlock, Wall,
     },
     juice,
     render_helpers::{draw_powerup_symbol, draw_rect_outline, powerup_color, snap_rect},
@@ -51,6 +51,59 @@ fn draw_active_powerup(
     *active_y += 10;
 }
 
+fn draw_paddle_mode(
+    d: &mut RaylibTextureMode<RaylibDrawHandle>,
+    state: &State,
+    pos: Vec2,
+    dims: Vec2,
+) {
+    let (pos, dims) = world_rect(state, pos, dims);
+    let (left, top, width, _height) = snap_rect(pos, dims);
+
+    if state.sticky_mode {
+        let cup_y = top - 1;
+        d.draw_line(left + 3, cup_y, left + 3, cup_y + 3, Color::LIME);
+        d.draw_line(
+            left + width - 4,
+            cup_y,
+            left + width - 4,
+            cup_y + 3,
+            Color::LIME,
+        );
+        d.draw_line(
+            left + 3,
+            cup_y + 3,
+            left + width - 4,
+            cup_y + 3,
+            Color::LIME,
+        );
+    }
+
+    if state.laser_mode {
+        d.draw_rectangle(left + 2, top - 2, 1, 3, Color::RED);
+        d.draw_rectangle(left + width - 3, top - 2, 1, 3, Color::RED);
+        d.draw_pixel(left + 2, top - 3, Color::WHITE);
+        d.draw_pixel(left + width - 3, top - 3, Color::WHITE);
+    }
+
+    if state.fireball_mode {
+        d.draw_line(
+            left + width / 2 - 2,
+            top - 2,
+            left + width / 2,
+            top - 4,
+            Color::ORANGE,
+        );
+        d.draw_line(
+            left + width / 2,
+            top - 4,
+            left + width / 2 + 2,
+            top - 2,
+            Color::YELLOW,
+        );
+    }
+}
+
 pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
     for physics in ecs.query::<&Physics>().with::<&Ball>().iter() {
         d.draw_text(
@@ -83,6 +136,7 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
         dims.y *= 1.0 - state.paddle_pulse * 0.18;
         let pos = ctransform.pos + Vec2::new(0.0, state.paddle_recoil);
         draw_world_outline(d, state, pos, dims, Color::RAYWHITE);
+        draw_paddle_mode(d, state, pos, dims);
     }
 
     for (entity, block, ctransform, shape, health) in ecs
@@ -108,6 +162,15 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
         let mut dims = shape.dims;
         dims *= 1.0 + state.ball_pulse * 0.12;
         draw_world_outline(d, state, ctransform.pos, dims, Color::RAYWHITE);
+        if state.fireball_mode {
+            let (pos, dims) = world_rect(
+                state,
+                ctransform.pos - Vec2::ONE,
+                shape.dims + Vec2::splat(2.0),
+            );
+            let (left, top, width, height) = snap_rect(pos, dims);
+            d.draw_rectangle_lines(left, top, width, height, Color::ORANGE);
+        }
     }
 
     for (_, ctransform, shape) in ecs.query::<(&LaserShot, &CTransform, &Shape)>().iter() {
@@ -137,6 +200,19 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
         let (pos, dims) = world_rect(state, ctransform.pos, shape.dims);
         let (left, top, width, height) = snap_rect(pos, dims);
         d.draw_rectangle(left, top, width, height, color);
+    }
+
+    for (popup, ctransform) in ecs.query::<(&ScorePopup, &CTransform)>().iter() {
+        let alpha = popup.frames_left as f32 / popup.max_frames.max(1) as f32;
+        let color = fade_color(popup.color, alpha);
+        let pos = juice::world_pos(state, ctransform.pos);
+        d.draw_text(
+            format!("+{}", popup.value).as_str(),
+            pos.x.round() as i32,
+            pos.y.round() as i32,
+            8,
+            color,
+        );
     }
 
     d.draw_text(

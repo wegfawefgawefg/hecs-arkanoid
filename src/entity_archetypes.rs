@@ -5,8 +5,8 @@ use raylib::prelude::Color;
 use crate::{
     components::{
         Ball, BallEater, Block, Bouncy, CTransform, Health, ImpactParticle, InputControlled,
-        LaserShot, OwnedBy, Paddle, Physics, Player, PowerUp, PowerUpDrop, PowerUpType, Shape,
-        StrongBlock, Wall,
+        LaserShot, OwnedBy, Paddle, Physics, Player, PowerUp, PowerUpDrop, PowerUpType, ScorePopup,
+        Shape, StrongBlock, Wall,
     },
     DIMS,
 };
@@ -172,6 +172,25 @@ pub fn spawn_impact_particle(
         Physics { vel, rot_vel: 0.0 },
         Shape {
             dims: Vec2::splat(size),
+        },
+    ));
+}
+
+pub fn spawn_score_popup(ecs: &mut World, pos: Vec2, value: u32, color: Color) {
+    ecs.spawn((
+        ScorePopup {
+            value,
+            color,
+            frames_left: 42,
+            max_frames: 42,
+        },
+        CTransform {
+            pos,
+            rot: Vec2::ZERO,
+        },
+        Physics {
+            vel: Vec2::new(0.0, -10.0),
+            rot_vel: 0.0,
         },
     ));
 }

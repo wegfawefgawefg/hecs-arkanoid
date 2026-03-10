@@ -6,6 +6,7 @@ use crate::audio_playing::AudioCommand;
 use crate::components::{
     AttachedTo, Ball, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock,
 };
+use crate::entity_archetypes::spawn_score_popup;
 use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
 use crate::juice;
 use crate::powerups::maybe_spawn_powerup_drop;
@@ -193,6 +194,7 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                 next_pos.x = 0.0;
                 next_vel.x = next_vel.x.abs();
                 bounce_feedback(ecs, state, next_pos + ball_dims * 0.5, Color::WHITE);
+                juice::nudge_camera(state, Vec2::new(1.0, 0.0), 1.0);
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
@@ -201,6 +203,7 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                 next_pos.x = ball_rect.pos.x;
                 next_vel.x = -next_vel.x.abs();
                 bounce_feedback(ecs, state, next_pos + ball_dims * 0.5, Color::WHITE);
+                juice::nudge_camera(state, Vec2::new(-1.0, 0.0), 1.0);
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
@@ -211,12 +214,14 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                 next_pos.y = 0.0;
                 next_vel.y = next_vel.y.abs();
                 bounce_feedback(ecs, state, next_pos + ball_dims * 0.5, Color::WHITE);
+                juice::nudge_camera(state, Vec2::new(0.0, 1.0), 1.0);
                 state
                     .audio_command_buffer
                     .push(AudioCommand::BallWallBounce);
             } else if ball_rect.bottom() >= DIMS.y as f32 - 1.0 {
                 juice::add_hitstop(state, 5);
                 juice::add_camera_shake(state, 2.0);
+                juice::nudge_camera(state, Vec2::new(0.0, -1.0), 1.6);
                 juice::add_zoom_pulse(state, 0.015);
                 juice::add_screen_flash(state, 0.18);
                 juice::spawn_hit_particles(ecs, next_pos + ball_dims * 0.5, Color::RED, 10, 26.0);
@@ -320,6 +325,7 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
 
                 if strong_block {
                     state.score = state.score.saturating_add(5);
+                    spawn_score_popup(ecs, block_rect.pos + block_rect.dims * 0.5, 5, Color::GRAY);
                     juice::add_hitstop(state, 1);
                     juice::add_camera_shake(state, 0.7);
                     juice::pulse_ball(state, 0.3);
@@ -337,15 +343,17 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                     ecs.query_one_mut::<(&Block, &mut Health)>(block_entity)
                 {
                     let block_color = block.color;
+                    let hit_pos = block_rect.pos + block_rect.dims * 0.5;
                     state.score = state.score.saturating_add(10);
                     if health.hp > 0 {
                         health.hp -= 1;
                     }
                     if health.hp == 0 {
                         state.score = state.score.saturating_add(90);
-                        let hit_pos = block_rect.pos + block_rect.dims * 0.5;
                         let _ = health;
                         let _ = block;
+                        spawn_score_popup(ecs, hit_pos, 10, block_color);
+                        spawn_score_popup(ecs, hit_pos, 90, block_color);
                         juice::add_hitstop(state, 3);
                         juice::add_camera_shake(state, 1.6);
                         juice::add_zoom_pulse(state, 0.02);
@@ -364,9 +372,9 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                             entity: block_entity,
                         });
                     } else {
-                        let hit_pos = block_rect.pos + block_rect.dims * 0.5;
                         let _ = health;
                         let _ = block;
+                        spawn_score_popup(ecs, hit_pos, 10, block_color);
                         juice::add_hitstop(state, 1);
                         juice::add_camera_shake(state, 0.65);
                         juice::pulse_ball(state, 0.3);

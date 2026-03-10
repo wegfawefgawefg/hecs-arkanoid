@@ -4,7 +4,7 @@ use raylib::prelude::Color;
 
 use crate::{entity_archetypes::spawn_impact_particle, state::State, DIMS};
 
-const MAX_SHAKE: f32 = 3.0;
+const MAX_SHAKE: f32 = 1.5;
 const MAX_ZOOM_PULSE: f32 = 0.04;
 
 pub fn update(state: &mut State) {
@@ -37,6 +37,11 @@ pub fn update(state: &mut State) {
     if state.paddle_recoil.abs() < 0.01 {
         state.paddle_recoil = 0.0;
     }
+
+    state.camera_impulse *= 0.76;
+    if state.camera_impulse.length_squared() < 0.01 {
+        state.camera_impulse = Vec2::ZERO;
+    }
 }
 
 pub fn consume_hitstop(state: &mut State) -> bool {
@@ -53,6 +58,19 @@ pub fn add_hitstop(state: &mut State, frames: u32) {
 
 pub fn add_camera_shake(state: &mut State, amount: f32) {
     state.camera_shake = (state.camera_shake + amount).clamp(0.0, MAX_SHAKE);
+}
+
+pub fn nudge_camera(state: &mut State, dir: Vec2, amount: f32) {
+    let safe_dir = if dir.length_squared() > 0.0 {
+        dir.normalize()
+    } else {
+        Vec2::ZERO
+    };
+    state.camera_impulse += safe_dir * amount;
+    let max = 2.0;
+    if state.camera_impulse.length() > max {
+        state.camera_impulse = state.camera_impulse.normalize() * max;
+    }
 }
 
 pub fn add_zoom_pulse(state: &mut State, amount: f32) {
@@ -73,12 +91,13 @@ pub fn pulse_ball(state: &mut State, amount: f32) {
 }
 
 pub fn world_offset(state: &State) -> Vec2 {
-    if state.camera_shake <= 0.0 {
-        return Vec2::ZERO;
-    }
-
     let phase = state.t * 0.37;
-    Vec2::new((phase * 2.7).sin(), (phase * 3.9).cos()) * state.camera_shake
+    let shake = if state.camera_shake > 0.0 {
+        Vec2::new((phase * 2.7).sin(), (phase * 3.9).cos()) * state.camera_shake * 0.35
+    } else {
+        Vec2::ZERO
+    };
+    state.camera_impulse + shake
 }
 
 pub fn world_scale(state: &State) -> f32 {

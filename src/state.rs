@@ -58,6 +58,7 @@ pub struct State {
     pub paddle_pulse: f32,
     pub ball_pulse: f32,
     pub paddle_recoil: f32,
+    pub camera_impulse: Vec2,
 
     pub deletion_events: Vec<DeletionEvent>,
 }
@@ -132,6 +133,7 @@ impl State {
             paddle_pulse: 0.0,
             ball_pulse: 0.0,
             paddle_recoil: 0.0,
+            camera_impulse: Vec2::ZERO,
 
             deletion_events,
         }
@@ -160,6 +162,7 @@ impl State {
         self.paddle_pulse = 0.0;
         self.ball_pulse = 0.0;
         self.paddle_recoil = 0.0;
+        self.camera_impulse = Vec2::ZERO;
     }
 }
 

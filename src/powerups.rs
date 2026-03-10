@@ -9,7 +9,7 @@ use crate::{
         Ball, Block, CTransform, Health, LaserShot, OwnedBy, Paddle, Physics, PowerUp, PowerUpDrop,
         PowerUpType, Shape, StrongBlock,
     },
-    entity_archetypes::{spawn_ball, spawn_laser_shot, spawn_powerup_drop},
+    entity_archetypes::{spawn_ball, spawn_laser_shot, spawn_powerup_drop, spawn_score_popup},
     juice,
     state::{DeletionEvent, State, FRAMES_PER_SECOND},
     DIMS,
@@ -134,6 +134,12 @@ fn apply_powerup(ecs: &mut World, state: &mut State, power_up_type: PowerUpType)
     }
 
     state.score = state.score.saturating_add(25);
+    spawn_score_popup(
+        ecs,
+        Vec2::new(DIMS.x as f32 * 0.5, DIMS.y as f32 * 0.78),
+        25,
+        Color::GOLD,
+    );
     juice::add_hitstop(state, 2);
     juice::add_camera_shake(state, 0.8);
     juice::add_zoom_pulse(state, 0.01);
@@ -268,6 +274,7 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
 
         if ecs.satisfies::<&StrongBlock>(block_entity) {
             state.score = state.score.saturating_add(5);
+            spawn_score_popup(ecs, block_pos + Vec2::new(6.0, 4.0), 5, Color::GRAY);
             juice::add_hitstop(state, 1);
             juice::add_camera_shake(state, 0.6);
             juice::spawn_hit_particles(ecs, block_pos + Vec2::new(6.0, 4.0), Color::GRAY, 4, 14.0);
@@ -279,6 +286,7 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
 
         let mut destroyed = false;
         let mut block_color = Color::RAYWHITE;
+        let hit_pos = block_pos + Vec2::new(6.0, 4.0);
         if let Ok((block, health)) = ecs.query_one_mut::<(&Block, &mut Health)>(block_entity) {
             state.score = state.score.saturating_add(10);
             block_color = block.color;
@@ -290,12 +298,14 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
 
         if destroyed {
             state.score = state.score.saturating_add(90);
+            spawn_score_popup(ecs, hit_pos, 10, block_color);
+            spawn_score_popup(ecs, hit_pos, 90, block_color);
             juice::add_hitstop(state, 2);
             juice::add_camera_shake(state, 1.2);
             juice::add_zoom_pulse(state, 0.015);
             juice::add_screen_flash(state, 0.08);
-            juice::spawn_hit_particles(ecs, block_pos + Vec2::new(6.0, 4.0), block_color, 8, 20.0);
-            maybe_spawn_powerup_drop(ecs, state, block_pos + Vec2::new(6.0, 4.0));
+            juice::spawn_hit_particles(ecs, hit_pos, block_color, 8, 20.0);
+            maybe_spawn_powerup_drop(ecs, state, hit_pos);
             state.deletion_events.push(DeletionEvent::Entity {
                 entity: block_entity,
             });
@@ -303,9 +313,10 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
                 .audio_command_buffer
                 .push(AudioCommand::BallBlockBounce);
         } else {
+            spawn_score_popup(ecs, hit_pos, 10, block_color);
             juice::add_hitstop(state, 1);
             juice::add_camera_shake(state, 0.55);
-            juice::spawn_hit_particles(ecs, block_pos + Vec2::new(6.0, 4.0), block_color, 4, 14.0);
+            juice::spawn_hit_particles(ecs, hit_pos, block_color, 4, 14.0);
             state
                 .audio_command_buffer
                 .push(AudioCommand::BallSturdyBlockBounce);
