@@ -88,6 +88,13 @@ pub struct HasSensor;
 pub struct VelocityManaged;
 pub struct PositionManaged;
 
+#[derive(Clone, Copy)]
+pub struct PowerUpDrop;
+
+#[derive(Clone, Copy)]
+pub struct LaserShot;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PowerUpType {
     Enlarge,
     Shrink,

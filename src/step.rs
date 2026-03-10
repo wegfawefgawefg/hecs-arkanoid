@@ -95,6 +95,7 @@ pub fn playing_step(state: &mut State, ecs: &mut World) {
     // systems::playing::physics::constantly_resize_paddle(ecs, state);
 
     systems::playing::input_processing::process_inputs(ecs, state);
+    systems::playing::powerups::pre_physics(ecs, state);
     // systems::playing::physics::boundary_checking(ecs, state);
 
     // all reshaping needs to happen before the ecs is synced to physics
@@ -103,6 +104,7 @@ pub fn playing_step(state: &mut State, ecs: &mut World) {
     systems::playing::physics::sync_ecs_to_physics(ecs, state);
     systems::playing::physics::step_physics(ecs, state);
     systems::playing::physics::respond_to_collisions(ecs, state);
+    systems::playing::powerups::post_physics(ecs, state);
     systems::playing::cleanup::process_deletion_events(ecs, state);
     systems::playing::state_changing::check_for_level_complete(ecs, state);
     systems::playing::state_changing::check_for_level_lost(ecs, state);

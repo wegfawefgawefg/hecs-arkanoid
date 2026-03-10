@@ -14,6 +14,8 @@ pub enum AudioCommand {
     BallPaddleBounce,
     BallSturdyBlockBounce,
     BallDrop,
+    PowerUpCatch,
+    PaddleLaser,
 
     LevelStart,
     LevelWin,
@@ -56,6 +58,12 @@ pub fn execute_audio_command_buffer(
             }
             AudioCommand::BallDrop => {
                 audio.sounds[SoundEffect::BallDrop as usize].play();
+            }
+            AudioCommand::PowerUpCatch => {
+                audio.sounds[SoundEffect::Confirm as usize].play();
+            }
+            AudioCommand::PaddleLaser => {
+                audio.sounds[SoundEffect::SmallLaser as usize].play();
             }
             AudioCommand::LevelLost => {
                 audio.sounds[SoundEffect::LevelLost as usize].play();

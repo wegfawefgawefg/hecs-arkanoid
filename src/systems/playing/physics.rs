@@ -5,6 +5,7 @@ use crate::audio_playing::AudioCommand;
 use crate::components::{Ball, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock};
 use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
 use crate::state::{DeletionEvent, State, FRAMES_PER_SECOND};
+use crate::systems::playing::powerups::maybe_spawn_powerup_drop;
 use crate::DIMS;
 
 const BALL_SPEED: f32 = 100.0;
@@ -111,7 +112,7 @@ fn ball_hits_paddle_side(
 
 pub fn sync_ecs_to_physics(_ecs: &World, _state: &mut State) {}
 
-pub fn set_ball_to_angle(ecs: &World, _state: &mut State) {
+pub fn set_ball_to_angle(ecs: &World, state: &mut State) {
     for physics in ecs.query::<&mut Physics>().with::<&Ball>().iter() {
         let x_sign = if physics.vel.x == 0.0 {
             1.0
@@ -124,8 +125,8 @@ pub fn set_ball_to_angle(ecs: &World, _state: &mut State) {
             physics.vel.y.signum()
         };
         let angle = std::f32::consts::PI / 3.0;
-        physics.vel.x = angle.cos() * BALL_SPEED * x_sign;
-        physics.vel.y = angle.sin() * BALL_SPEED * y_sign;
+        physics.vel.x = angle.cos() * BALL_SPEED * state.ball_speed_scale * x_sign;
+        physics.vel.y = angle.sin() * BALL_SPEED * state.ball_speed_scale * y_sign;
     }
 }
 
@@ -246,26 +247,33 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
             }
 
             if let Some((block_entity, block_rect)) = hit_block {
-                let (corrected_pos, hit_horizontal) =
-                    resolve_rect_collision(ball_rect, previous_rect, block_rect);
-                next_pos = corrected_pos;
-                if hit_horizontal {
-                    next_vel.x = -next_vel.x;
-                } else {
-                    next_vel.y = -next_vel.y;
+                let strong_block = ecs.satisfies::<&StrongBlock>(block_entity);
+                if !state.fireball_mode || strong_block {
+                    let (corrected_pos, hit_horizontal) =
+                        resolve_rect_collision(ball_rect, previous_rect, block_rect);
+                    next_pos = corrected_pos;
+                    if hit_horizontal {
+                        next_vel.x = -next_vel.x;
+                    } else {
+                        next_vel.y = -next_vel.y;
+                    }
                 }
 
-                if ecs.satisfies::<&StrongBlock>(block_entity) {
+                if strong_block {
+                    state.score = state.score.saturating_add(5);
                     state
                         .audio_command_buffer
-                        .push(AudioCommand::BallBlockBounce);
+                        .push(AudioCommand::BallSturdyBlockBounce);
                 } else if let Ok((_block, health)) =
                     ecs.query_one_mut::<(&Block, &mut Health)>(block_entity)
                 {
+                    state.score = state.score.saturating_add(10);
                     if health.hp > 0 {
                         health.hp -= 1;
                     }
                     if health.hp == 0 {
+                        state.score = state.score.saturating_add(90);
+                        maybe_spawn_powerup_drop(ecs, block_rect.pos + block_rect.dims / 2.0);
                         state
                             .audio_command_buffer
                             .push(AudioCommand::BallBlockBounce);

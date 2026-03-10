@@ -4,8 +4,8 @@ use raylib::prelude::Color;
 
 use crate::{
     components::{
-        Ball, BallEater, Block, Bouncy, CTransform, Health, InputControlled, OwnedBy, Paddle,
-        Physics, Player, Shape, StrongBlock, Wall,
+        Ball, BallEater, Block, Bouncy, CTransform, Health, InputControlled, LaserShot, OwnedBy,
+        Paddle, Physics, Player, PowerUp, PowerUpDrop, PowerUpType, Shape, StrongBlock, Wall,
     },
     DIMS,
 };
@@ -60,6 +60,8 @@ pub fn spawn_walls(ecs: &mut World) {
 }
 
 pub const BALL_SHAPE: Vec2 = Vec2::new(4.0, 4.0);
+pub const POWERUP_SHAPE: Vec2 = Vec2::new(8.0, 8.0);
+pub const LASER_SHAPE: Vec2 = Vec2::new(2.0, 6.0);
 
 pub fn spawn_ball(ecs: &mut World, pos: Vec2, vel: Vec2, owner: Entity) {
     ecs.spawn((
@@ -113,4 +115,37 @@ pub fn spawn_paddle(ecs: &mut World, pos: Vec2, shape: Vec2, _color: Color) -> E
         Paddle { size: 1 },
         Shape { dims: shape },
     ))
+}
+
+pub fn spawn_powerup_drop(ecs: &mut World, pos: Vec2, power_up_type: PowerUpType) {
+    ecs.spawn((
+        PowerUpDrop,
+        PowerUp { power_up_type },
+        CTransform {
+            pos,
+            rot: Vec2::ZERO,
+        },
+        Physics {
+            vel: Vec2::new(0.0, 24.0),
+            rot_vel: 0.0,
+        },
+        Shape {
+            dims: POWERUP_SHAPE,
+        },
+    ));
+}
+
+pub fn spawn_laser_shot(ecs: &mut World, pos: Vec2) {
+    ecs.spawn((
+        LaserShot,
+        CTransform {
+            pos,
+            rot: Vec2::ZERO,
+        },
+        Physics {
+            vel: Vec2::new(0.0, -220.0),
+            rot_vel: 0.0,
+        },
+        Shape { dims: LASER_SHAPE },
+    ));
 }
