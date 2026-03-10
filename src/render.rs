@@ -3,8 +3,9 @@ use hecs::World;
 use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode};
 
 use crate::{
+    gameplay_render,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
-    systems, DIMS,
+    DIMS,
 };
 
 pub fn draw(
@@ -105,7 +106,7 @@ pub fn prepare_level_render(
 }
 
 pub fn playing_render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHandle>) {
-    systems::playing::rendering::render(ecs, state, d);
+    gameplay_render::render(ecs, state, d);
 }
 
 const MESSAGES_OF_ENCOURAGEMENT: [&str; 35] = [

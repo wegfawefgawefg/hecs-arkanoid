@@ -6,8 +6,8 @@ use crate::components::{
     AttachedTo, Ball, Block, CTransform, Health, Paddle, Physics, Shape, StrongBlock,
 };
 use crate::game_mode_transitions::BASE_PADDLE_SHAPE;
+use crate::powerups::maybe_spawn_powerup_drop;
 use crate::state::{DeletionEvent, State, FRAMES_PER_SECOND};
-use crate::systems::playing::powerups::maybe_spawn_powerup_drop;
 use crate::DIMS;
 
 const BALL_SPEED: f32 = 100.0;

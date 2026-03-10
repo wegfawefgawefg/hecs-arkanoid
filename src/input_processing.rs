@@ -78,6 +78,7 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     }
     if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_SPACE)
         || rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_Z)
+        || rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT)
     {
         inputs.shoot = true;
     }

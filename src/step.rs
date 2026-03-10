@@ -4,10 +4,11 @@ use raylib::{prelude::Vector2, RaylibHandle};
 
 use crate::{
     audio_playing::AudioCommand,
+    cleanup,
     components::Paddle,
     entity_archetypes::spawn_ball,
+    gameplay_input, level_rules, physics, powerups,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
-    systems::{self},
     DIMS, TS_RATIO, WINDOW_DIMS,
 };
 
@@ -92,22 +93,22 @@ pub fn playing_step(state: &mut State, ecs: &mut World) {
         state.level_change_delay -= 1;
     }
 
-    // systems::playing::physics::constantly_resize_paddle(ecs, state);
+    // physics::constantly_resize_paddle(ecs, state);
 
-    systems::playing::input_processing::process_inputs(ecs, state);
-    systems::playing::powerups::pre_physics(ecs, state);
-    // systems::playing::physics::boundary_checking(ecs, state);
+    gameplay_input::process_inputs(ecs, state);
+    powerups::pre_physics(ecs, state);
+    // physics::boundary_checking(ecs, state);
 
     // all reshaping needs to happen before the ecs is synced to physics
 
-    systems::playing::physics::set_ball_to_angle(ecs, state);
-    systems::playing::physics::sync_ecs_to_physics(ecs, state);
-    systems::playing::physics::step_physics(ecs, state);
-    systems::playing::physics::respond_to_collisions(ecs, state);
-    systems::playing::powerups::post_physics(ecs, state);
-    systems::playing::cleanup::process_deletion_events(ecs, state);
-    systems::playing::state_changing::check_for_level_complete(ecs, state);
-    systems::playing::state_changing::check_for_level_lost(ecs, state);
+    physics::set_ball_to_angle(ecs, state);
+    physics::sync_ecs_to_physics(ecs, state);
+    physics::step_physics(ecs, state);
+    physics::respond_to_collisions(ecs, state);
+    powerups::post_physics(ecs, state);
+    cleanup::process_deletion_events(ecs, state);
+    level_rules::check_for_level_complete(ecs, state);
+    level_rules::check_for_level_lost(ecs, state);
 }
 
 pub fn level_complete_step(state: &mut State, _ecs: &mut World) {
