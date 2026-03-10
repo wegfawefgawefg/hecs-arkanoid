@@ -4,9 +4,9 @@ use raylib::prelude::Color;
 
 use crate::{
     components::{
-        Ball, BallEater, Block, Bouncy, CTransform, Health, ImpactParticle, InputControlled,
-        LaserShot, OwnedBy, Paddle, Physics, Player, PowerUp, PowerUpDrop, PowerUpType, ScorePopup,
-        Shape, StrongBlock, Wall,
+        Ball, BallEater, Block, Bouncy, CTransform, Health, ImpactParticle, ImpactParticleKind,
+        InputControlled, LaserShot, OwnedBy, Paddle, Physics, Player, PowerUp, PowerUpDrop,
+        PowerUpType, ScorePopup, Shape, StrongBlock, Wall,
     },
     DIMS,
 };
@@ -161,9 +161,13 @@ pub fn spawn_impact_particle(
 ) {
     ecs.spawn((
         ImpactParticle {
+            kind: ImpactParticleKind::Square,
             color,
             frames_left,
             max_frames: frames_left.max(1),
+            gravity: 0.0,
+            drag: 0.88,
+            grow_per_frame: 0.0,
         },
         CTransform {
             pos,
@@ -173,6 +177,37 @@ pub fn spawn_impact_particle(
         Shape {
             dims: Vec2::splat(size),
         },
+    ));
+}
+
+pub fn spawn_effect_particle(
+    ecs: &mut World,
+    pos: Vec2,
+    vel: Vec2,
+    color: Color,
+    size: Vec2,
+    frames_left: u32,
+    kind: ImpactParticleKind,
+    gravity: f32,
+    drag: f32,
+    grow_per_frame: f32,
+) {
+    ecs.spawn((
+        ImpactParticle {
+            kind,
+            color,
+            frames_left,
+            max_frames: frames_left.max(1),
+            gravity,
+            drag,
+            grow_per_frame,
+        },
+        CTransform {
+            pos,
+            rot: Vec2::ZERO,
+        },
+        Physics { vel, rot_vel: 0.0 },
+        Shape { dims: size },
     ));
 }
 

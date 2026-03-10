@@ -2,10 +2,23 @@ use glam::Vec2;
 use hecs::World;
 use raylib::prelude::Color;
 
-use crate::{entity_archetypes::spawn_impact_particle, state::State, DIMS};
+use crate::{
+    components::ImpactParticleKind,
+    entity_archetypes::{spawn_effect_particle, spawn_impact_particle},
+    state::State,
+    DIMS,
+};
 
 const MAX_SHAKE: f32 = 1.5;
 const MAX_ZOOM_PULSE: f32 = 0.04;
+
+#[derive(Clone, Copy)]
+pub enum BlockBreakEffect {
+    Bounce,
+    Fireball,
+    Laser,
+    StrongHit,
+}
 
 pub fn update(state: &mut State) {
     state.camera_shake *= 0.82;
@@ -126,5 +139,168 @@ pub fn spawn_hit_particles(ecs: &mut World, pos: Vec2, color: Color, count: u32,
         let vel = Vec2::new(angle.cos(), angle.sin()) * speed * (0.7 + t * 0.6);
         let size = if i % 3 == 0 { 2.0 } else { 1.0 };
         spawn_impact_particle(ecs, pos, vel, color, size, 10 + (i % 5));
+    }
+}
+
+pub fn spawn_fireball_trail(ecs: &mut World, pos: Vec2, vel: Vec2) {
+    spawn_effect_particle(
+        ecs,
+        pos + Vec2::new(0.0, 1.0),
+        Vec2::new(-vel.x * 0.02, -10.0 - vel.length() * 0.03),
+        Color::new(90, 90, 90, 255),
+        Vec2::new(2.0, 2.0),
+        16,
+        ImpactParticleKind::Smoke,
+        -5.0,
+        0.93,
+        0.12,
+    );
+
+    spawn_effect_particle(
+        ecs,
+        pos + Vec2::new(1.0, 1.0),
+        Vec2::new(-vel.x * 0.015, -4.0),
+        Color::new(255, 80, 40, 255),
+        Vec2::new(1.0, 1.0),
+        9,
+        ImpactParticleKind::Ember,
+        -2.0,
+        0.9,
+        0.0,
+    );
+}
+
+pub fn spawn_block_break_effect(
+    ecs: &mut World,
+    pos: Vec2,
+    dims: Vec2,
+    color: Color,
+    effect: BlockBreakEffect,
+) {
+    let center = pos + dims * 0.5;
+    match effect {
+        BlockBreakEffect::Bounce => {
+            for i in 0..8 {
+                let t = i as f32 / 8.0;
+                let angle = t * std::f32::consts::TAU;
+                let vel = Vec2::new(angle.cos(), angle.sin()) * (16.0 + t * 8.0);
+                spawn_effect_particle(
+                    ecs,
+                    center,
+                    vel,
+                    color,
+                    Vec2::new(2.0, 2.0),
+                    14,
+                    ImpactParticleKind::Shard,
+                    18.0,
+                    0.9,
+                    -0.02,
+                );
+            }
+        }
+        BlockBreakEffect::Fireball => {
+            for i in 0..10 {
+                let t = i as f32 / 10.0;
+                let angle = t * std::f32::consts::TAU;
+                let vel = Vec2::new(angle.cos(), angle.sin()) * (10.0 + t * 10.0);
+                let ember_color = if i % 2 == 0 {
+                    Color::new(255, 70, 30, 255)
+                } else {
+                    Color::new(255, 180, 40, 255)
+                };
+                spawn_effect_particle(
+                    ecs,
+                    center,
+                    vel + Vec2::new(0.0, -8.0),
+                    ember_color,
+                    Vec2::new(1.0, 1.0),
+                    12 + (i % 5),
+                    ImpactParticleKind::Ember,
+                    -3.0,
+                    0.9,
+                    0.0,
+                );
+            }
+            for i in 0..5 {
+                let x = pos.x + (i as f32 / 4.0) * dims.x;
+                spawn_effect_particle(
+                    ecs,
+                    Vec2::new(x, center.y),
+                    Vec2::new((i as f32 - 2.0) * 2.0, -10.0 - i as f32),
+                    Color::new(80, 80, 80, 255),
+                    Vec2::new(2.0, 2.0),
+                    18,
+                    ImpactParticleKind::Smoke,
+                    -4.0,
+                    0.94,
+                    0.14,
+                );
+            }
+            spawn_effect_particle(
+                ecs,
+                center,
+                Vec2::new(0.0, 8.0),
+                Color::new(255, 120, 20, 255),
+                dims * 0.5,
+                10,
+                ImpactParticleKind::Melt,
+                10.0,
+                0.9,
+                -0.08,
+            );
+        }
+        BlockBreakEffect::Laser => {
+            for i in 0..6 {
+                let x = pos.x + 2.0 + i as f32 * ((dims.x - 4.0) / 5.0);
+                spawn_effect_particle(
+                    ecs,
+                    Vec2::new(x, pos.y),
+                    Vec2::new(0.0, -14.0 - i as f32),
+                    Color::new(255, 80, 80, 255),
+                    Vec2::new(1.0, dims.y * 0.5),
+                    8,
+                    ImpactParticleKind::LaserStreak,
+                    -4.0,
+                    0.92,
+                    -0.1,
+                );
+            }
+            for i in 0..6 {
+                let t = i as f32 / 6.0;
+                let angle = -std::f32::consts::FRAC_PI_2 + (t - 0.5) * 0.8;
+                let vel = Vec2::new(angle.cos(), angle.sin()) * 18.0;
+                spawn_effect_particle(
+                    ecs,
+                    center,
+                    vel,
+                    Color::new(255, 220, 220, 255),
+                    Vec2::new(1.0, 2.0),
+                    10,
+                    ImpactParticleKind::LaserStreak,
+                    0.0,
+                    0.9,
+                    -0.06,
+                );
+            }
+        }
+        BlockBreakEffect::StrongHit => {
+            for i in 0..5 {
+                let t = i as f32 / 5.0;
+                let angle = t * std::f32::consts::TAU;
+                let vel = Vec2::new(angle.cos(), angle.sin()) * 12.0;
+                spawn_effect_particle(
+                    ecs,
+                    center,
+                    vel,
+                    Color::GRAY,
+                    Vec2::new(1.0, 1.0),
+                    10,
+                    ImpactParticleKind::Shard,
+                    12.0,
+                    0.88,
+                    0.0,
+                );
+            }
+        }
     }
 }

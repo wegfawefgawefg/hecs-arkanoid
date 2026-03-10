@@ -65,3 +65,37 @@ The game can get most of its feel from simple layered feedback first.
 - better transition typography / motion
 - stronger paddle-mode rendering
 - richer particles per event kind
+
+## Next Layer
+
+The next strong juice layer for this repo is `contextual block death`.
+
+- normal ball break:
+  - little shard pop
+  - stronger for full destroy than for partial damage
+- fireball break:
+  - red / orange ball look
+  - smoke trail while active
+  - ember burst and melt / burn effect when a block dies
+- laser break:
+  - vertical streaks and hot white-red carve effect
+  - should read like the block was cut, not just bumped
+- strong block hit:
+  - heavier gray crack / shatter effect without the block dying
+
+This should stay lightweight and data-poor. The repo does not need a full animation system yet; a few particle flavors and per-cause effect helpers are enough.
+
+## Juice Still Left On The Table
+
+- stronger block death variants:
+  - split into pieces and fall with gravity
+  - shatter
+  - melt
+  - burn
+  - shrink out
+- better laser travel trail
+- fireball heat distortion / aura
+- score-chain / combo callouts
+- last-brick tension treatment
+- stronger level transition polish
+- better audio layering per powerup mode

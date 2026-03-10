@@ -329,12 +329,12 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                     juice::add_hitstop(state, 1);
                     juice::add_camera_shake(state, 0.7);
                     juice::pulse_ball(state, 0.3);
-                    juice::spawn_hit_particles(
+                    juice::spawn_block_break_effect(
                         ecs,
-                        block_rect.pos + block_rect.dims * 0.5,
+                        block_rect.pos,
+                        block_rect.dims,
                         Color::GRAY,
-                        4,
-                        14.0,
+                        juice::BlockBreakEffect::StrongHit,
                     );
                     state
                         .audio_command_buffer
@@ -358,7 +358,17 @@ pub fn step_physics(ecs: &mut World, state: &mut State) {
                         juice::add_camera_shake(state, 1.6);
                         juice::add_zoom_pulse(state, 0.02);
                         juice::pulse_ball(state, 0.5);
-                        juice::spawn_hit_particles(ecs, hit_pos, block_color, 10, 24.0);
+                        juice::spawn_block_break_effect(
+                            ecs,
+                            block_rect.pos,
+                            block_rect.dims,
+                            block_color,
+                            if state.fireball_mode {
+                                juice::BlockBreakEffect::Fireball
+                            } else {
+                                juice::BlockBreakEffect::Bounce
+                            },
+                        );
                         maybe_spawn_powerup_drop(
                             ecs,
                             state,

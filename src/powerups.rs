@@ -5,11 +5,14 @@ use raylib::prelude::Color;
 
 use crate::{
     audio_playing::AudioCommand,
+    components::ImpactParticleKind,
     components::{
         Ball, Block, CTransform, Health, LaserShot, OwnedBy, Paddle, Physics, PowerUp, PowerUpDrop,
         PowerUpType, Shape, StrongBlock,
     },
-    entity_archetypes::{spawn_ball, spawn_laser_shot, spawn_powerup_drop, spawn_score_popup},
+    entity_archetypes::{
+        spawn_ball, spawn_effect_particle, spawn_laser_shot, spawn_powerup_drop, spawn_score_popup,
+    },
     juice,
     state::{DeletionEvent, State, FRAMES_PER_SECOND},
     DIMS,
@@ -241,20 +244,38 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
         .collect();
 
     for entity in entities {
-        let Ok((ctransform, physics, shape)) =
-            ecs.query_one_mut::<(&mut CTransform, &Physics, &Shape)>(entity)
-        else {
+        let Some((laser_pos, laser_dims)) = (|| {
+            let Ok((ctransform, physics, shape)) =
+                ecs.query_one_mut::<(&mut CTransform, &Physics, &Shape)>(entity)
+            else {
+                return None;
+            };
+
+            ctransform.pos += physics.vel * dt;
+            Some((ctransform.pos, shape.dims))
+        })() else {
             continue;
         };
 
-        ctransform.pos += physics.vel * dt;
-
-        if ctransform.pos.y + shape.dims.y < 0.0 {
+        if laser_pos.y + laser_dims.y < 0.0 {
             state.deletion_events.push(DeletionEvent::Entity { entity });
             continue;
         }
 
-        let laser_rect = rect_for(ctransform.pos, shape.dims);
+        spawn_effect_particle(
+            ecs,
+            laser_pos + Vec2::new(0.0, laser_dims.y),
+            Vec2::new(0.0, 18.0),
+            Color::new(255, 80, 80, 255),
+            Vec2::new(1.0, 3.0),
+            6,
+            ImpactParticleKind::LaserStreak,
+            0.0,
+            0.85,
+            -0.15,
+        );
+
+        let laser_rect = rect_for(laser_pos, laser_dims);
         let mut hit_block = None;
         for (block_entity, _, block_transform, block_shape) in ecs
             .query::<(hecs::Entity, &Block, &CTransform, &Shape)>()
@@ -277,7 +298,13 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
             spawn_score_popup(ecs, block_pos + Vec2::new(6.0, 4.0), 5, Color::GRAY);
             juice::add_hitstop(state, 1);
             juice::add_camera_shake(state, 0.6);
-            juice::spawn_hit_particles(ecs, block_pos + Vec2::new(6.0, 4.0), Color::GRAY, 4, 14.0);
+            juice::spawn_block_break_effect(
+                ecs,
+                block_pos,
+                Vec2::new(20.0, 8.0),
+                Color::GRAY,
+                juice::BlockBreakEffect::StrongHit,
+            );
             state
                 .audio_command_buffer
                 .push(AudioCommand::BallSturdyBlockBounce);
@@ -303,7 +330,13 @@ fn step_laser_shots(ecs: &mut World, state: &mut State) {
             juice::add_hitstop(state, 2);
             juice::add_camera_shake(state, 1.2);
             juice::add_zoom_pulse(state, 0.015);
-            juice::spawn_hit_particles(ecs, hit_pos, block_color, 8, 20.0);
+            juice::spawn_block_break_effect(
+                ecs,
+                block_pos,
+                Vec2::new(20.0, 8.0),
+                block_color,
+                juice::BlockBreakEffect::Laser,
+            );
             maybe_spawn_powerup_drop(ecs, state, hit_pos);
             state.deletion_events.push(DeletionEvent::Entity {
                 entity: block_entity,

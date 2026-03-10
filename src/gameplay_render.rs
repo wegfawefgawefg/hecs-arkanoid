@@ -4,8 +4,8 @@ use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode};
 
 use crate::{
     components::{
-        Ball, BallEater, Block, CTransform, Health, ImpactParticle, LaserShot, Paddle, Physics,
-        PowerUp, PowerUpDrop, PowerUpType, ScorePopup, Shape, StrongBlock, Wall,
+        Ball, BallEater, Block, CTransform, Health, ImpactParticle, ImpactParticleKind, LaserShot,
+        Paddle, Physics, PowerUp, PowerUpDrop, PowerUpType, ScorePopup, Shape, StrongBlock, Wall,
     },
     juice,
     render_helpers::{draw_powerup_symbol, draw_rect_outline, powerup_color, snap_rect},
@@ -161,7 +161,12 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
     for (_, ctransform, shape) in ecs.query::<(&Ball, &CTransform, &Shape)>().iter() {
         let mut dims = shape.dims;
         dims *= 1.0 + state.ball_pulse * 0.12;
-        draw_world_outline(d, state, ctransform.pos, dims, Color::RAYWHITE);
+        let ball_color = if state.fireball_mode {
+            Color::new(255, 80, 40, 255)
+        } else {
+            Color::RAYWHITE
+        };
+        draw_world_outline(d, state, ctransform.pos, dims, ball_color);
         if state.fireball_mode {
             let (pos, dims) = world_rect(
                 state,
@@ -170,6 +175,7 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
             );
             let (left, top, width, height) = snap_rect(pos, dims);
             d.draw_rectangle_lines(left, top, width, height, Color::ORANGE);
+            d.draw_pixel(left + width / 2, top - 1, Color::YELLOW);
         }
     }
 
@@ -199,7 +205,41 @@ pub fn render(ecs: &World, state: &State, d: &mut RaylibTextureMode<RaylibDrawHa
         let color = fade_color(particle.color, alpha);
         let (pos, dims) = world_rect(state, ctransform.pos, shape.dims);
         let (left, top, width, height) = snap_rect(pos, dims);
-        d.draw_rectangle(left, top, width, height, color);
+        match particle.kind {
+            ImpactParticleKind::Square | ImpactParticleKind::Shard => {
+                d.draw_rectangle(left, top, width, height, color);
+            }
+            ImpactParticleKind::Smoke => {
+                d.draw_rectangle(left, top, width, height, color);
+                if width > 1 && height > 1 {
+                    d.draw_rectangle(
+                        left + 1,
+                        top + 1,
+                        (width - 1).max(1),
+                        (height - 1).max(1),
+                        fade_color(Color::BLACK, alpha * 0.35),
+                    );
+                }
+            }
+            ImpactParticleKind::Ember => {
+                d.draw_rectangle(left, top, width.max(1), height.max(1), color);
+                d.draw_pixel(left, top, Color::YELLOW);
+            }
+            ImpactParticleKind::LaserStreak => {
+                d.draw_rectangle(left, top, width.max(1), height.max(1), color);
+                d.draw_rectangle(left, top, width.max(1), 1, Color::WHITE);
+            }
+            ImpactParticleKind::Melt => {
+                d.draw_rectangle(left, top, width.max(1), height.max(1), color);
+                d.draw_line(
+                    left + width / 2,
+                    top,
+                    left + width / 2,
+                    top + height.max(1) - 1,
+                    Color::YELLOW,
+                );
+            }
+        }
     }
 
     for (popup, ctransform) in ecs.query::<(&ScorePopup, &CTransform)>().iter() {

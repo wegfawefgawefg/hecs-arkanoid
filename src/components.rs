@@ -95,10 +95,24 @@ pub struct PowerUpDrop;
 pub struct LaserShot;
 
 #[derive(Clone, Copy)]
+pub enum ImpactParticleKind {
+    Square,
+    Smoke,
+    Ember,
+    LaserStreak,
+    Shard,
+    Melt,
+}
+
+#[derive(Clone, Copy)]
 pub struct ImpactParticle {
+    pub kind: ImpactParticleKind,
     pub color: Color,
     pub frames_left: u32,
     pub max_frames: u32,
+    pub gravity: f32,
+    pub drag: f32,
+    pub grow_per_frame: f32,
 }
 
 #[derive(Clone, Copy)]

@@ -4,6 +4,7 @@ use raylib::prelude::Color;
 use crate::{
     components::{Ball, CTransform, ImpactParticle, Physics, ScorePopup, Shape},
     entity_archetypes::spawn_impact_particle,
+    juice,
     state::{DeletionEvent, State, FRAMES_PER_SECOND},
 };
 
@@ -17,14 +18,21 @@ pub fn step(ecs: &mut World, state: &mut State) {
         .collect();
 
     for entity in entities {
-        let Ok((ctransform, physics, particle)) =
-            ecs.query_one_mut::<(&mut CTransform, &mut Physics, &mut ImpactParticle)>(entity)
-        else {
+        let Ok((ctransform, physics, particle, shape)) = ecs.query_one_mut::<(
+            &mut CTransform,
+            &mut Physics,
+            &mut ImpactParticle,
+            &mut Shape,
+        )>(entity) else {
             continue;
         };
 
+        physics.vel.y += particle.gravity * dt;
         ctransform.pos += physics.vel * dt;
-        physics.vel *= 0.88;
+        physics.vel *= particle.drag;
+        shape.dims += glam::Vec2::splat(particle.grow_per_frame);
+        shape.dims.x = shape.dims.x.max(1.0);
+        shape.dims.y = shape.dims.y.max(1.0);
         particle.frames_left = particle.frames_left.saturating_sub(1);
 
         if particle.frames_left == 0 {
@@ -70,6 +78,10 @@ fn spawn_ball_trails(ecs: &mut World, state: &State) {
         let speed = vel.length();
         if speed < 70.0 {
             continue;
+        }
+
+        if state.fireball_mode {
+            juice::spawn_fireball_trail(ecs, pos + dims * 0.5, vel);
         }
 
         let life = if speed > 120.0 { 10 } else { 7 };
