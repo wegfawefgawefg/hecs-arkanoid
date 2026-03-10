@@ -13,7 +13,7 @@ use crate::powerups::maybe_spawn_powerup_drop;
 use crate::state::{DeletionEvent, State, FRAMES_PER_SECOND};
 use crate::DIMS;
 
-const BALL_SPEED: f32 = 100.0;
+const BALL_SPEED: f32 = 150.0;
 const PHYSICS_SUBSTEPS: usize = 4;
 
 #[derive(Clone, Copy)]

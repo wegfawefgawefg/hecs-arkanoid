@@ -40,6 +40,7 @@ pub struct State {
 
     // pub collision_events: Vec<Collision>,
     pub level: u32,
+    pub level_complete_target_level: u32,
     pub lives: u32,
     pub score: u32,
     pub level_change_delay: u32,
@@ -115,6 +116,7 @@ impl State {
 
             // collision_events: Vec::new(),
             level: 1,
+            level_complete_target_level: 1,
             lives: 3,
             score: 0,
             level_change_delay: 0,
@@ -141,6 +143,7 @@ impl State {
 
     pub fn reset_run(&mut self) {
         self.level = 1;
+        self.level_complete_target_level = 1;
         self.lives = 3;
         self.score = 0;
         self.near_clear_frames = 0;

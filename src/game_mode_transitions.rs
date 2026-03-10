@@ -66,9 +66,8 @@ pub fn playing_init_state(_ecs: &mut World, _state: &mut State) {
 }
 
 pub fn level_complete_init_state(_ecs: &mut World, state: &mut State) {
-    if state.level == 2 {
-        state.next_game_mode = Some(GameMode::WinGame);
-    }
+    state.level_complete_target_level =
+        (state.level + 1).clamp(1, level_data::LEVEL_BLOCK_DATA.len() as u32);
     state.level_complete_state.mode = LevelCompleteMode::Announce;
     state.level_complete_state.countdown = (60.0 * TS_RATIO) as u32;
     juice::add_hitstop(state, 3);

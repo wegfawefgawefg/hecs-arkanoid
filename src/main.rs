@@ -40,7 +40,7 @@ lazy_static! {
 const TIMESTEP: f32 = 1.0 / state::FRAMES_PER_SECOND as f32;
 const TS_RATIO: f32 = state::FRAMES_PER_SECOND as f32 / 60.0;
 fn main() {
-    let (mut rl, rlt) = raylib::init().title("raylib-rs-lowres-template").build();
+    let (mut rl, rlt) = raylib::init().title("hecs-arkanoid").build();
     unsafe {
         SetTraceLogLevel(TraceLogLevel::LOG_WARNING as i32);
     }

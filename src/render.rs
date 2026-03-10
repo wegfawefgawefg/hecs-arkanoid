@@ -361,7 +361,7 @@ fn draw_stage_transition_strip(
     draw_live_stage_preview(ecs, d, camera_center, zoom, 0.0);
     draw_level_preview(
         d,
-        (state.level + 1).clamp(1, level_data::LEVEL_BLOCK_DATA.len() as u32),
+        state.level_complete_target_level,
         camera_center,
         zoom,
         next_offset_x,
@@ -369,7 +369,7 @@ fn draw_stage_transition_strip(
     );
 
     d.draw_text(
-        format!("{} -> {}", state.level, state.level + 1).as_str(),
+        format!("{} -> {}", state.level, state.level_complete_target_level).as_str(),
         DIMS.x as i32 / 2 - 18,
         (DIMS.y as f32 * 0.16).round() as i32,
         10,
@@ -415,7 +415,7 @@ pub fn level_complete_render(
     } else if let LevelCompleteMode::Pause = state.level_complete_state.mode {
         draw_stage_transition_strip(ecs, state, d);
         let cursor = Vec2::new(DIMS.x as f32 * 0.36, DIMS.y as f32 * 0.12);
-        let title = format!("Level {}", state.level + 1);
+        let title = format!("Level {}", state.level_complete_target_level);
         let size = juice::text_pulse_size(state, 16, 3.0);
         d.draw_text(
             title.as_str(),
