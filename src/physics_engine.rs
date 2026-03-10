@@ -1,10 +1,6 @@
-use rapier2d::{
-    crossbeam::{self, channel::Receiver},
-    na::{OPoint, Vector2},
-    prelude::*,
-};
-
-use crate::DIMS;
+use glam::Vec2;
+use rapier2d::prelude::*;
+use std::sync::mpsc::{channel, Receiver};
 
 use hecs::Entity;
 use rapier2d::dynamics::RigidBodyHandle;
@@ -25,18 +21,18 @@ pub struct PhysicsEngine {
     ecs_to_rigid_body: HashMap<Entity, RigidBodyHandle>,
     rigid_body_to_ecs: HashMap<RigidBodyHandle, Entity>,
 
-    pub gravity: Vector2<f32>,
+    pub gravity: Vec2,
     pub integration_parameters: IntegrationParameters,
     pub physics_pipeline: PhysicsPipeline,
     pub island_manager: IslandManager,
-    pub broad_phase: BroadPhase,
+    pub broad_phase: BroadPhaseBvh,
     pub narrow_phase: NarrowPhase,
     pub impulse_joint_set: ImpulseJointSet,
     pub multibody_joint_set: MultibodyJointSet,
     pub ccd_solver: CCDSolver,
     pub physics_hooks: (),
     pub collision_recv: Receiver<CollisionEvent>,
-    pub contact_force_recv: Receiver<ContactForceEvent>,
+    pub _contact_force_recv: Receiver<ContactForceEvent>,
     pub event_handler: ChannelEventCollector,
 
     pub collision_events: Vec<CollisionEvent>,
@@ -47,18 +43,18 @@ pub struct PhysicsEngine {
 
 impl PhysicsEngine {
     pub fn new() -> Self {
-        let gravity = vector![0.0, 0.0];
+        let gravity = Vec2::ZERO;
         let integration_parameters = IntegrationParameters::default();
         let physics_pipeline = PhysicsPipeline::new();
         let island_manager = IslandManager::new();
-        let broad_phase = BroadPhase::new();
+        let broad_phase = BroadPhaseBvh::new();
         let narrow_phase = NarrowPhase::new();
         let impulse_joint_set = ImpulseJointSet::new();
         let multibody_joint_set = MultibodyJointSet::new();
         let ccd_solver = CCDSolver::new();
 
-        let (collision_send, collision_recv) = crossbeam::channel::unbounded();
-        let (contact_force_send, contact_force_recv) = crossbeam::channel::unbounded();
+        let (collision_send, collision_recv) = channel();
+        let (contact_force_send, contact_force_recv) = channel();
         let event_handler = ChannelEventCollector::new(collision_send, contact_force_send);
 
         let rigid_body_set = RigidBodySet::new();
@@ -79,7 +75,7 @@ impl PhysicsEngine {
             ccd_solver,
             physics_hooks: (),
             collision_recv,
-            contact_force_recv,
+            _contact_force_recv: contact_force_recv,
             event_handler,
 
             rigid_body_set,
@@ -91,7 +87,7 @@ impl PhysicsEngine {
 
     pub fn step(&mut self) {
         self.physics_pipeline.step(
-            &self.gravity,
+            self.gravity,
             &self.integration_parameters,
             &mut self.island_manager,
             &mut self.broad_phase,
@@ -101,7 +97,6 @@ impl PhysicsEngine {
             &mut self.impulse_joint_set,
             &mut self.multibody_joint_set,
             &mut self.ccd_solver,
-            None,
             &self.physics_hooks,
             &self.event_handler,
         );

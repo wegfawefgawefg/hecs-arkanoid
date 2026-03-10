@@ -4,7 +4,7 @@ use raylib::{prelude::Vector2, RaylibHandle};
 
 use crate::{
     audio_playing::AudioCommand,
-    components::{Paddle, Player},
+    components::Paddle,
     entity_archetypes::spawn_ball,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     systems::{self},
@@ -35,7 +35,7 @@ pub fn step(rl: &mut RaylibHandle, ecs: &mut World, state: &mut State) {
 }
 
 ////////////////////////    PER GAME MODE STEPPING     ////////////////////////
-pub fn title_step(state: &mut State, ecs: &mut World) {}
+pub fn title_step(_state: &mut State, _ecs: &mut World) {}
 
 pub fn prepare_level_step(rl: &mut RaylibHandle, state: &mut State, ecs: &mut World) {
     if state.prepare_level_state.countdown > 0 {
@@ -64,7 +64,7 @@ pub fn prepare_level_step(rl: &mut RaylibHandle, state: &mut State, ecs: &mut Wo
                 state.prepare_level_state.countdown = (20.0 * TS_RATIO) as u32;
 
                 let mut paddle_entity: Option<Entity> = None;
-                for (entity, _) in ecs.query::<&Paddle>().iter() {
+                for (entity, _) in ecs.query::<(Entity, &Paddle)>().iter() {
                     paddle_entity = Some(entity);
                 }
 

@@ -1,6 +1,6 @@
 use audio::Song;
 use audio_playing::execute_audio_command_buffer;
-use glam::{UVec2, Vec2};
+use glam::UVec2;
 use hecs::World;
 use raylib::prelude::*;
 use raylib::{ffi::SetTraceLogLevel, prelude::TraceLogLevel};
@@ -50,12 +50,14 @@ fn main() {
     let mouse_scale = DIMS.as_vec2() / WINDOW_DIMS.as_vec2();
     rl.set_mouse_scale(mouse_scale.x, mouse_scale.y);
 
-    let mut render_texture = rl.load_render_texture(DIMS.x, DIMS.y).unwrap_or_else(|e| {
-        println!("Error creating render texture: {}", e);
-        std::process::exit(1);
-    });
+    let mut render_texture = rl
+        .load_render_texture(&rlt, DIMS.x, DIMS.y)
+        .unwrap_or_else(|e| {
+            println!("Error creating render texture: {}", e);
+            std::process::exit(1);
+        });
     let mut large_render_texture = rl
-        .load_render_texture(WINDOW_DIMS.x, WINDOW_DIMS.y)
+        .load_render_texture(&rlt, WINDOW_DIMS.x, WINDOW_DIMS.y)
         .unwrap_or_else(|e| {
             println!("Error creating render texture: {}", e);
             std::process::exit(1);
@@ -65,20 +67,12 @@ fn main() {
     let texture_names = vec!["grayscale.fs"];
     for name in texture_names {
         let path = format!("src/shaders/{}", name);
-        match rl.load_shader(&rlt, None, Some(&path)) {
-            Ok(shader) => shaders.push(shader),
-            Err(e) => {
-                println!("Error loading shader: {}", e);
-                std::process::exit(1);
-            }
-        };
+        shaders.push(rl.load_shader(&rlt, None, Some(&path)));
     }
 
     ////////////////    INIT AUDIO    ////////////////
-    let mut audio = audio::Audio::new(&mut rl, &rlt);
-    audio
-        .rl_audio_device
-        .play_music_stream(&mut audio.songs[Song::Playing as usize]);
+    let mut audio = audio::Audio::new();
+    audio.songs[Song::Playing as usize].play_stream();
 
     ////////////////    INIT STATE    ////////////////
     let mut state = state::State::new();
@@ -126,9 +120,7 @@ fn main() {
             execute_audio_command_buffer(&mut rl, &mut audio, &mut state.audio_command_buffer);
         }
 
-        audio // UNMUTE THIS TO HEAR THE MUSIC
-            .rl_audio_device
-            .update_music_stream(&mut audio.songs[Song::Playing as usize]);
+        audio.songs[Song::Playing as usize].update_stream();
 
         ////////////////    DRAWING  ////////////////
         let mut draw_handle = rl.begin_drawing(&rlt);
@@ -141,13 +133,12 @@ fn main() {
         }
         scale_and_blit_render_texture_to_window(
             &rlt,
-            &mut state,
             &mut draw_handle,
             &mut render_texture,
             &mut large_render_texture,
             fullscreen,
             *WINDOW_DIMS,
-            &shaders,
+            &mut shaders,
         );
 
         let time_b = std::time::Instant::now();

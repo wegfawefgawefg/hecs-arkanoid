@@ -6,12 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glam = "0.24.2"
-hecs = "0.10.3"
-lazy_static = "1.4.0"
-nalgebra = { version = "0.32.3", features = ["convert-glam024", "glam024"] }
-rand = "0.8.5"
-rapier2d = {version="0.17.2", features=[]}
-raylib = "3.7.0"
-strum = "0.25.0"
-strum_macros = "0.25.2"
+glam = "0.30.9"
+hecs = "0.11.0"
+lazy_static = "1.5.0"
+nalgebra = { version = "0.34.1", features = ["convert-glam030", "glam030"] }
+rand = "0.10.0"
+rapier2d = { version = "0.32.0", features = [] }
+raylib = "5.5.1"
+strum = "0.28.0"
+strum_macros = "0.28.0"

@@ -1,5 +1,7 @@
+#![allow(dead_code)]
+
 use glam::Vec2;
-use rand::{rngs::StdRng, Rng};
+use rand::{rngs::StdRng, RngExt};
 
 use crate::DIMS;
 
@@ -25,8 +27,8 @@ use crate::DIMS;
 
 pub fn get_random_pos_in_play_area(rng: &mut StdRng) -> Vec2 {
     Vec2::new(
-        rng.gen_range(0.0..DIMS.x as f32),
-        rng.gen_range(0.0..DIMS.y as f32),
+        rng.random_range(0.0..DIMS.x as f32),
+        rng.random_range(0.0..DIMS.y as f32),
     )
 }
 
@@ -38,48 +40,48 @@ pub fn get_position_outside_play_area(rng: &mut StdRng) -> Vec2 {
 pub fn get_padded_position_outside_play_area(rng: &mut StdRng, padded_size: f32) -> Vec2 {
     // position needs to be outside of the screen
     // there are 8 zones, first pick a zone
-    let zone = rng.gen_range(0..8);
+    let zone = rng.random_range(0..8);
     // generate a position based on the zone, and return it
     match zone {
         0 => Vec2::new(
             // top left
-            rng.gen_range(-padded_size * 2.0..-padded_size),
-            rng.gen_range(-padded_size * 2.0..-padded_size),
+            rng.random_range(-padded_size * 2.0..-padded_size),
+            rng.random_range(-padded_size * 2.0..-padded_size),
         ),
         1 => Vec2::new(
             // top right
-            rng.gen_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
-            rng.gen_range(-padded_size * 2.0..-padded_size),
+            rng.random_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
+            rng.random_range(-padded_size * 2.0..-padded_size),
         ),
         2 => Vec2::new(
             // bottom right
-            rng.gen_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
-            rng.gen_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
+            rng.random_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
+            rng.random_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
         ),
         3 => Vec2::new(
             // bottom left
-            rng.gen_range(-padded_size * 2.0..-padded_size),
-            rng.gen_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
+            rng.random_range(-padded_size * 2.0..-padded_size),
+            rng.random_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
         ),
         4 => Vec2::new(
             // top
-            rng.gen_range(0.0..DIMS.x as f32),
-            rng.gen_range(-padded_size * 2.0..-padded_size),
+            rng.random_range(0.0..DIMS.x as f32),
+            rng.random_range(-padded_size * 2.0..-padded_size),
         ),
         5 => Vec2::new(
             // bottom
-            rng.gen_range(0.0..DIMS.x as f32),
-            rng.gen_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
+            rng.random_range(0.0..DIMS.x as f32),
+            rng.random_range(DIMS.y as f32 + padded_size..DIMS.y as f32 + padded_size * 2.0),
         ),
         6 => Vec2::new(
             // left
-            rng.gen_range(-padded_size * 2.0..-padded_size),
-            rng.gen_range(0.0..DIMS.y as f32),
+            rng.random_range(-padded_size * 2.0..-padded_size),
+            rng.random_range(0.0..DIMS.y as f32),
         ),
         7 => Vec2::new(
             // right
-            rng.gen_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
-            rng.gen_range(0.0..DIMS.y as f32),
+            rng.random_range(DIMS.x as f32 + padded_size..DIMS.x as f32 + padded_size * 2.0),
+            rng.random_range(0.0..DIMS.y as f32),
         ),
         _ => panic!("Unexpected zone"), // This shouldn't happen with rng.gen_range(0..8)
     }

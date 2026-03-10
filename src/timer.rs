@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub struct Timer {
     pub interval: u32, // frames
     pub countdown: u32,

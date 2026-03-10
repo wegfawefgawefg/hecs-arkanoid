@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use glam::Vec2;
 use raylib::prelude::{Color, RaylibDraw, RaylibDrawHandle, RaylibTextureMode, Vector2};
 

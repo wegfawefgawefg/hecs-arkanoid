@@ -1,15 +1,19 @@
-use glam::{UVec2, Vec2};
-use raylib::prelude::*;
-
-use crate::state::State;
+use glam::UVec2;
+use raylib::{
+    core::window::{get_monitor_height, get_monitor_position, get_monitor_width},
+    prelude::*,
+};
 
 pub fn center_window(rl: &mut raylib::RaylibHandle, window_dims: UVec2) {
-    let screen_dims = UVec2::new(rl.get_screen_width() as u32, rl.get_screen_height() as u32);
-    let screen_center = screen_dims / 2;
-    let window_center = window_dims / 2;
-    let mut offset = window_center - screen_center;
-    offset.y += 500;
-    rl.set_window_position(offset.x as i32, offset.y as i32);
+    let monitor = 0;
+    let monitor_pos = get_monitor_position(monitor);
+    let monitor_size = UVec2::new(
+        get_monitor_width(monitor) as u32,
+        get_monitor_height(monitor) as u32,
+    );
+    let centered_x = monitor_pos.x as i32 + (monitor_size.x as i32 - window_dims.x as i32) / 2;
+    let centered_y = monitor_pos.y as i32 + (monitor_size.y as i32 - window_dims.y as i32) / 2;
+    rl.set_window_position(centered_x, centered_y);
     rl.set_target_fps(144);
 }
 
@@ -28,13 +32,12 @@ pub fn center_window(rl: &mut raylib::RaylibHandle, window_dims: UVec2) {
 
 pub fn scale_and_blit_render_texture_to_window(
     rlt: &RaylibThread,
-    state: &mut State,
     draw_handle: &mut RaylibDrawHandle,
     render_texture: &mut RenderTexture2D,
     large_render_texture: &mut RenderTexture2D,
     fullscreen: bool,
     window_dims: UVec2,
-    shaders: &[Shader],
+    shaders: &mut [Shader],
 ) {
     let source_rec = Rectangle::new(
         0.0,
@@ -86,7 +89,7 @@ pub fn scale_and_blit_render_texture_to_window(
         -large_render_texture.texture.height as f32,
     );
     let dest_rec = Rectangle::new(0.0, 0.0, window_dims.x as f32, window_dims.y as f32);
-    let mut shaded_draw_handle = draw_handle.begin_shader_mode(&shaders[0]);
+    let mut shaded_draw_handle = draw_handle.begin_shader_mode(&mut shaders[0]);
     shaded_draw_handle.draw_texture_pro(
         large_render_texture,
         source_rec,

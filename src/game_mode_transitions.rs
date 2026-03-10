@@ -1,17 +1,12 @@
 use glam::Vec2;
 use hecs::World;
-use rand::Rng;
-use rapier2d::prelude::*;
 use raylib::prelude::Color;
 
 use crate::{
-    components::{
-        Ball, Block, Bouncy, CTransform, InputControlled, OwnedBy, Paddle, Physics, Player, Shape,
-        Wall,
-    },
-    entity_archetypes::{spawn_ball, spawn_block, spawn_paddle, spawn_walls},
+    components::Block,
+    entity_archetypes::{spawn_block, spawn_paddle, spawn_walls},
     level_data,
-    physics_engine::{m2p, p2m, PhysicsEngine},
+    physics_engine::PhysicsEngine,
     state::{GameMode, GameOverMode, LevelCompleteMode, PrepareLevelMode, State, WinGameMode},
     systems, DIMS, TS_RATIO,
 };
@@ -43,7 +38,7 @@ pub fn transition_game_mode(ecs: &mut World, state: &mut State) {
 }
 
 ////////////////////////    PER GAME MODE STATE TRANSITIONS     ////////////////////////
-pub fn title_init_state(ecs: &mut World, state: &mut State) {
+pub fn title_init_state(ecs: &mut World, _state: &mut State) {
     ecs.clear();
 }
 
@@ -58,7 +53,7 @@ pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
 
     // add players paddle
     let player_pos = Vec2::new(DIMS.x as f32 / 2.0, DIMS.y as f32 * 0.9);
-    let player = spawn_paddle(
+    let _player = spawn_paddle(
         ecs,
         state,
         player_pos,
@@ -77,11 +72,11 @@ pub fn prepare_level_init_state(ecs: &mut World, state: &mut State) {
 }
 
 pub const BASE_PADDLE_SHAPE: Vec2 = Vec2 { x: 30.0, y: 8.0 };
-pub fn playing_init_state(ecs: &mut World, state: &mut State) {
+pub fn playing_init_state(_ecs: &mut World, _state: &mut State) {
     println!("playing init");
 }
 
-pub fn level_complete_init_state(ecs: &mut World, state: &mut State) {
+pub fn level_complete_init_state(_ecs: &mut World, state: &mut State) {
     if state.level == 2 {
         state.next_game_mode = Some(GameMode::WinGame);
     }
@@ -89,19 +84,19 @@ pub fn level_complete_init_state(ecs: &mut World, state: &mut State) {
     state.level_complete_state.countdown = (60.0 * TS_RATIO) as u32;
 }
 
-pub fn win_game_init_state(ecs: &mut World, state: &mut State) {
+pub fn win_game_init_state(_ecs: &mut World, state: &mut State) {
     state.win_game_state.mode = WinGameMode::Announce;
     state.win_game_state.countdown = (60.0 * TS_RATIO) as u32;
 }
 
-pub fn game_over_init_state(ecs: &mut World, state: &mut State) {
+pub fn game_over_init_state(_ecs: &mut World, state: &mut State) {
     state.game_over_state.mode = GameOverMode::Announce;
     state.game_over_state.countdown = (60.0 * TS_RATIO) as u32;
 }
 
 pub fn delete_all_blocks(ecs: &mut World, state: &mut State) {
     let blocks: Vec<_> = ecs
-        .query::<&Block>()
+        .query::<(hecs::Entity, &Block)>()
         .iter()
         .map(|(entity, _)| entity)
         .collect();

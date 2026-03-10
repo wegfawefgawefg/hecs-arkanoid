@@ -17,7 +17,7 @@ pub fn render(ecs: &World, state: &mut State) {
     // render_physics(state);
 
     let mut cursor = Vec2::new(20.0, 20.0);
-    for (_, physics) in ecs.query::<&Physics>().with::<&Ball>().iter() {
+    for physics in ecs.query::<&Physics>().with::<&Ball>().iter() {
         state.render_command_buffer.push(RenderCommand::Text {
             pos: cursor,
             text: format!("vel: {}", physics.vel),
@@ -28,14 +28,16 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render walls
-    for (entity, (ctransform, shape)) in ecs.query::<(&CTransform, &Shape)>().with::<&Wall>().iter()
+    for (entity, ctransform, shape) in ecs
+        .query::<(hecs::Entity, &CTransform, &Shape)>()
+        .with::<&Wall>()
+        .iter()
     {
         // white if not a ball eater, red if it is
         let mut color: Color = Color::WHITE;
-        if let Ok(mut r) = ecs.query_one::<&BallEater>(entity) {
-            if let Some(_) = r.get() {
-                color = Color::RED;
-            }
+        let mut r = ecs.query_one::<&BallEater>(entity);
+        if r.get().is_ok() {
+            color = Color::RED;
         }
         state
             .render_command_buffer
@@ -47,7 +49,7 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render every player as a paddle
-    for (_, (_, ctransform, shape)) in ecs.query::<(&Paddle, &CTransform, &Shape)>().iter() {
+    for (_, ctransform, shape) in ecs.query::<(&Paddle, &CTransform, &Shape)>().iter() {
         state.render_command_buffer.push(RenderCommand::Paddle {
             pos: ctransform.pos,
             dims: shape.dims,
@@ -56,10 +58,11 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render every block
-    for (entity, (block, ctransform, shape, health)) in
-        ecs.query::<(&Block, &CTransform, &Shape, &Health)>().iter()
+    for (entity, block, ctransform, shape, health) in ecs
+        .query::<(hecs::Entity, &Block, &CTransform, &Shape, &Health)>()
+        .iter()
     {
-        let ball_unbreakable = ecs.satisfies::<&StrongBlock>(entity).unwrap_or(false);
+        let ball_unbreakable = ecs.satisfies::<&StrongBlock>(entity);
         state.render_command_buffer.push(RenderCommand::Block {
             pos: ctransform.pos,
             dims: shape.dims,
@@ -70,7 +73,7 @@ pub fn render(ecs: &World, state: &mut State) {
     }
 
     // render ball
-    for (_, (_, ctransform, shape)) in ecs.query::<(&Ball, &CTransform, &Shape)>().iter() {
+    for (_, ctransform, shape) in ecs.query::<(&Ball, &CTransform, &Shape)>().iter() {
         state.render_command_buffer.push(RenderCommand::Ball {
             pos: ctransform.pos,
             dims: shape.dims,
@@ -88,10 +91,11 @@ pub fn render(ecs: &World, state: &mut State) {
     });
 }
 
+#[allow(dead_code)]
 pub fn render_physics(state: &mut State) {
     // Render colliders
     for (_, collider) in state.physics.collider_set.iter() {
-        let center = collider.position().translation.vector;
+        let center = collider.translation();
         let shape = collider.shape();
         let shape_type = shape.shape_type();
 
@@ -114,8 +118,8 @@ pub fn render_physics(state: &mut State) {
 
     // Render rigid bodies (Optional, if you need to distinguish them)
     for (_, rigid_body) in state.physics.rigid_body_set.iter() {
-        let pos = rigid_body.position().translation.vector;
-        let rot = rigid_body.position().rotation.angle();
+        let pos = rigid_body.translation();
+        let rot = rigid_body.rotation().angle();
 
         let ppos = Vec2::new(m2p(pos.x), m2p(pos.y));
         let prot = Vec2::new(rot.cos(), rot.sin());

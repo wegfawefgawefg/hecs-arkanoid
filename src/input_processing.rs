@@ -47,7 +47,7 @@ pub fn title_process_input(rl: &mut RaylibHandle, state: &mut State) {
     state.level = 1;
 }
 
-pub fn prepare_level_process_input(rl: &mut RaylibHandle, state: &mut State) {}
+pub fn prepare_level_process_input(_rl: &mut RaylibHandle, _state: &mut State) {}
 
 pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_ESCAPE) {
@@ -90,7 +90,7 @@ pub fn playing_process_input(rl: &mut RaylibHandle, state: &mut State) {
     state.playing_inputs = inputs;
 }
 
-pub fn level_complete_process_input(rl: &mut RaylibHandle, state: &mut State) {}
+pub fn level_complete_process_input(_rl: &mut RaylibHandle, _state: &mut State) {}
 
 pub fn win_game_process_input(rl: &mut RaylibHandle, state: &mut State) {
     if rl.is_key_pressed(raylib::consts::KeyboardKey::KEY_ESCAPE) {

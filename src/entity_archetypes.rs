@@ -1,25 +1,26 @@
 use glam::Vec2;
 use hecs::{Entity, World};
-use nalgebra::vector;
 use rapier2d::prelude::{
-    ActiveEvents, ColliderBuilder, InteractionGroups, Point, RigidBodyBuilder,
+    ActiveEvents, ColliderBuilder, InteractionGroups, InteractionTestMode, RigidBodyBuilder,
 };
 use raylib::prelude::Color;
 
 use crate::{
     components::{
         Ball, BallEater, Block, Bouncy, CTransform, HasRigidBody, Health, InputControlled, OwnedBy,
-        Paddle, Physics, Player, PositionManaged, PowerUp, PowerUpType, Shape, StrongBlock,
-        VelocityManaged, Wall,
+        Paddle, Physics, Player, PositionManaged, Shape, StrongBlock, VelocityManaged, Wall,
     },
     physics_engine::p2m,
     state::State,
     DIMS,
 };
 
+fn collision_groups(memberships: u32, filter: u32) -> InteractionGroups {
+    InteractionGroups::new(memberships.into(), filter.into(), InteractionTestMode::And)
+}
+
 pub fn spawn_walls(ecs: &mut World, state: &mut State) {
     println!("Spawning walls");
-    let wall_color = Color::RAYWHITE;
     let wall_thickness = 20.0;
     // top wall
     let pos = Vec2::new(0.0, -wall_thickness + 1.0);
@@ -45,7 +46,7 @@ pub fn spawn_walls(ecs: &mut World, state: &mut State) {
             .friction(0.0)
             .build();
     let top_wall_rigid_body = RigidBodyBuilder::fixed()
-        .translation(vector![p2m(center.x), p2m(center.y)])
+        .translation(Vec2::new(p2m(center.x), p2m(center.y)))
         .can_sleep(false)
         .build();
     let top_wall_body_handle = state.physics.rigid_body_set.insert(top_wall_rigid_body);
@@ -83,7 +84,7 @@ pub fn spawn_walls(ecs: &mut World, state: &mut State) {
             .friction(0.0)
             .build();
     let bottom_wall_rigid_body = RigidBodyBuilder::fixed()
-        .translation(vector![p2m(center.x), p2m(center.y)])
+        .translation(Vec2::new(p2m(center.x), p2m(center.y)))
         .can_sleep(false)
         .build();
     let bottom_wall_body_handle = state.physics.rigid_body_set.insert(bottom_wall_rigid_body);
@@ -120,7 +121,7 @@ pub fn spawn_walls(ecs: &mut World, state: &mut State) {
             .friction(0.0)
             .build();
     let left_wall_rigid_body = RigidBodyBuilder::fixed()
-        .translation(vector![p2m(center.x), p2m(center.y)])
+        .translation(Vec2::new(p2m(center.x), p2m(center.y)))
         .can_sleep(false)
         .build();
     let left_wall_body_handle = state.physics.rigid_body_set.insert(left_wall_rigid_body);
@@ -158,7 +159,7 @@ pub fn spawn_walls(ecs: &mut World, state: &mut State) {
             .friction(0.0)
             .build();
     let right_wall_rigid_body = RigidBodyBuilder::fixed()
-        .translation(vector![p2m(center.x), p2m(center.y)])
+        .translation(Vec2::new(p2m(center.x), p2m(center.y)))
         .can_sleep(false)
         .build();
     let right_wall_body_handle = state.physics.rigid_body_set.insert(right_wall_rigid_body);
@@ -232,11 +233,11 @@ pub fn spawn_ball(ecs: &mut World, state: &mut State, pos: Vec2, vel: Vec2, owne
         .friction(0.0)
         .mass(0.0001)
         .active_events(ActiveEvents::COLLISION_EVENTS)
-        .collision_groups(InteractionGroups::new(0b0001.into(), 0b0001.into()))
+        .collision_groups(collision_groups(0b0001, 0b0001))
         .build();
     let ball_rigid_body = RigidBodyBuilder::dynamic()
-        .translation(vector![p2m(pos.x), p2m(pos.y)])
-        .linvel(vector![p2m(vel.x), p2m(vel.y)])
+        .translation(Vec2::new(p2m(pos.x), p2m(pos.y)))
+        .linvel(Vec2::new(p2m(vel.x), p2m(vel.y)))
         .lock_rotations()
         .linear_damping(0.0)
         .angular_damping(0.0)
@@ -280,13 +281,13 @@ pub fn spawn_block(
     let block_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
         .restitution(1.0)
         .friction(0.0)
-        .collision_groups(InteractionGroups::new(0b0101.into(), 0b0101.into()))
+        .collision_groups(collision_groups(0b0101, 0b0101))
         .build();
     let block_rigid_body = RigidBodyBuilder::fixed()
-        .translation(vector![
+        .translation(Vec2::new(
             p2m(pos.x + shape.x / 2.0),
-            p2m(pos.y + shape.y / 2.0)
-        ])
+            p2m(pos.y + shape.y / 2.0),
+        ))
         .ccd_enabled(true)
         .can_sleep(false)
         .build();
@@ -307,7 +308,7 @@ pub fn spawn_paddle(
     state: &mut State,
     pos: Vec2,
     shape: Vec2,
-    color: Color,
+    _color: Color,
 ) -> Entity {
     let paddle_entity = ecs.spawn((
         CTransform {
@@ -328,13 +329,13 @@ pub fn spawn_paddle(
 
     let paddle_collider = ColliderBuilder::cuboid(p2m(shape.x) / 2.0, p2m(shape.y) / 2.0)
         .restitution(1.0)
-        .collision_groups(InteractionGroups::new(0b0011.into(), 0b0011.into()))
+        .collision_groups(collision_groups(0b0011, 0b0011))
         .build();
     let paddle_rigid_body = RigidBodyBuilder::kinematic_position_based()
-        .translation(vector![
+        .translation(Vec2::new(
             p2m(pos.x + shape.x / 2.0),
-            p2m(pos.y + shape.y / 2.0)
-        ])
+            p2m(pos.y + shape.y / 2.0),
+        ))
         // .ccd_enabled(true)
         .can_sleep(false)
         .build();

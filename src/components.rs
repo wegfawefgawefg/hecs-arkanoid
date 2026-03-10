@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use glam::Vec2;
 use hecs::Entity;
 use raylib::prelude::Color;

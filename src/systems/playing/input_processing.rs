@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub fn process_inputs(ecs: &mut World, state: &mut State) {
-    for (_, (ctransform, shape)) in ecs
+    for (ctransform, shape) in ecs
         .query::<(&mut CTransform, &Shape)>()
         .with::<&Paddle>()
         .iter()

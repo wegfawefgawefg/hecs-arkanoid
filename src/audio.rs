@@ -1,5 +1,5 @@
+use raylib::prelude::RaylibAudio;
 use raylib::prelude::*;
-use raylib::{prelude::RaylibAudio, RaylibHandle, RaylibThread};
 
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -35,23 +35,24 @@ pub enum SoundEffect {
 }
 
 pub struct Audio {
-    pub rl_audio_device: RaylibAudio,
-    pub songs: Vec<Music>,
-    pub sounds: Vec<Sound>,
-    pub music_volume: f32,
-    pub sound_effects_volume: f32,
+    pub _rl_audio_device: &'static RaylibAudio,
+    pub songs: Vec<Music<'static>>,
+    pub sounds: Vec<Sound<'static>>,
 }
 
 impl Audio {
-    pub fn new(_rl: &mut RaylibHandle, rlt: &RaylibThread) -> Self {
-        let rl_audio_device = RaylibAudio::init_audio_device();
+    pub fn new() -> Self {
+        let rl_audio_device = Box::leak(Box::new(
+            RaylibAudio::init_audio_device().expect("Error initializing audio device"),
+        ));
 
         let error = "Error loading audio";
         let mut songs = Vec::new();
         let file_names = vec!["playing"];
         for name in file_names {
             let path = format!("assets/music/{}.ogg", name);
-            let music = Music::load_music_stream(rlt, path.as_str()).expect(error);
+            let music = rl_audio_device.new_music(path.as_str()).expect(error);
+            music.set_volume(1.0);
             songs.push(music);
         }
 
@@ -61,17 +62,15 @@ impl Audio {
         for sound_effect in SoundEffect::iter() {
             let file_name_prefix = get_sound_file_name(sound_effect);
             let path = format!("assets/sounds/{}.ogg", file_name_prefix);
-            // let music = Music::load_music_stream(rlt, path.as_str()).expect(error);
-            let sound = Sound::load_sound(path.as_str()).expect(error);
+            let sound = rl_audio_device.new_sound(path.as_str()).expect(error);
+            sound.set_volume(1.0);
             sounds.push(sound);
         }
 
         Self {
-            rl_audio_device,
+            _rl_audio_device: rl_audio_device,
             songs,
             sounds,
-            music_volume: 1.0,
-            sound_effects_volume: 1.0,
         }
     }
 

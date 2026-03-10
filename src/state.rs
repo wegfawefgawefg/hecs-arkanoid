@@ -1,13 +1,10 @@
 use glam::Vec2;
 use hecs::Entity;
-use rand::{rngs::StdRng, SeedableRng};
-use rapier2d::prelude::RigidBodyHandle;
+use rand::{rng, rngs::StdRng, SeedableRng};
 
 use crate::{
     audio_playing::AudioCommandBuffer,
-    components::Physics,
     input_processing::{PlayingInputs, TitleInputs},
-    message_stream::ExpiringMessages,
     physics_engine::PhysicsEngine,
     render_commands::RenderCommandBuffer,
 };
@@ -30,7 +27,6 @@ pub struct State {
     pub running: bool,
     pub time_since_last_update: f32,
     pub t: f32,
-    pub rng: StdRng,
 
     pub game_mode: GameMode,
     pub next_game_mode: Option<GameMode>,
@@ -39,8 +35,6 @@ pub struct State {
     pub level_complete_state: Box<LevelCompleteState>,
     pub win_game_state: Box<WinGameState>,
     pub game_over_state: Box<GameOverState>,
-
-    pub expiring_messages: ExpiringMessages,
 
     pub audio_command_buffer: AudioCommandBuffer,
     pub render_command_buffer: RenderCommandBuffer,
@@ -60,7 +54,8 @@ pub struct State {
 
 impl State {
     pub fn new() -> Self {
-        let rng: StdRng = StdRng::from_entropy();
+        let mut seeder = rng();
+        let _rng: StdRng = StdRng::from_rng(&mut seeder);
 
         let game_mode = GameMode::Title;
         let transition_to: Option<GameMode> = None;
@@ -82,8 +77,6 @@ impl State {
             countdown: 0,
         });
 
-        let expiring_messages = ExpiringMessages::new();
-
         let render_command_buffer: RenderCommandBuffer = RenderCommandBuffer::new();
         let audio_command_buffer: AudioCommandBuffer = AudioCommandBuffer::new();
 
@@ -100,8 +93,6 @@ impl State {
             running: true,
             time_since_last_update: 0.0,
 
-            rng,
-
             t: 0.0,
 
             game_mode,
@@ -111,8 +102,6 @@ impl State {
             level_complete_state,
             win_game_state,
             game_over_state,
-
-            expiring_messages,
 
             audio_command_buffer,
             render_command_buffer,

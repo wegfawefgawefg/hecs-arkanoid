@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use rand::Rng;
+use rand::RngExt;
 use raylib::prelude::*;
 
 use crate::audio::{Audio, SoundEffect};
@@ -26,7 +26,7 @@ pub fn execute_audio_command_buffer(
     audio_command_buffer: &mut AudioCommandBuffer,
 ) {
     let unique_commands: HashSet<_> = audio_command_buffer.iter().cloned().collect();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for command in unique_commands.iter() {
         match command {
             AudioCommand::BallBlockBounce => {
@@ -36,45 +36,29 @@ pub fn execute_audio_command_buffer(
                     SoundEffect::BallBounce3 as usize,
                     SoundEffect::BallBounce4 as usize,
                 ];
-                let random_explosion = explosion_variants[rng.gen_range(0..4)];
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[random_explosion]);
+                let random_explosion = explosion_variants[rng.random_range(0..4)];
+                audio.sounds[random_explosion].play();
             }
             AudioCommand::BallWallBounce => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::BallWallBounce as usize]);
+                audio.sounds[SoundEffect::BallWallBounce as usize].play();
             }
             AudioCommand::BallSturdyBlockBounce => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::BallSturdyBlockBounce as usize]);
+                audio.sounds[SoundEffect::BallSturdyBlockBounce as usize].play();
             }
             AudioCommand::BallPaddleBounce => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::BallHitPaddle as usize]);
+                audio.sounds[SoundEffect::BallHitPaddle as usize].play();
             }
             AudioCommand::LevelStart => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::LevelStart as usize]);
+                audio.sounds[SoundEffect::LevelStart as usize].play();
             }
             AudioCommand::LevelWin => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::LevelWin as usize]);
+                audio.sounds[SoundEffect::LevelWin as usize].play();
             }
             AudioCommand::BallDrop => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::BallDrop as usize]);
+                audio.sounds[SoundEffect::BallDrop as usize].play();
             }
             AudioCommand::LevelLost => {
-                audio
-                    .rl_audio_device
-                    .play_sound(&audio.sounds[SoundEffect::LevelLost as usize]);
+                audio.sounds[SoundEffect::LevelLost as usize].play();
             }
         }
     }
